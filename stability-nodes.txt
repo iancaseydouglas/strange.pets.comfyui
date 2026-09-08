@@ -1,0 +1,273 @@
+# Claude Code prompt: ComfyUI Stability AI node package
+
+Copy everything below into Claude Code. Keep `stability_openapi.json` in the
+same folder — it's the verified, official Stability REST API spec
+(`api.stability.ai`, tag group "Stable Image"), and every field name, type,
+range, and default below was pulled directly from it. Treat it as the source
+of truth if anything here and the file ever disagree.
+
+---
+
+## Prompt
+
+```
+Build a ComfyUI custom node package that wraps Stability AI's Stable Image
+API (v2beta) for local use in ComfyUI Desktop, covering Generate, Edit,
+Upscale, and Control.
+
+Reference spec: ./stability_openapi.json (official spec, fetched from
+api.stability.ai). Use it as ground truth for field names, types, and
+ranges — everything below was extracted from it, but if anything drifts,
+the file wins.
+
+## Shared infrastructure (base class used by every node)
+
+- Auth: `Authorization: Bearer <key>` header. Read STABILITY_API_KEY from
+  the environment, with a fallback STRING widget.
+- Requests: multipart/form-data, NOT JSON.
+- Default response mode: `Accept: image/*` — most endpoints return raw
+  image bytes directly and are SYNCHRONOUS (no polling). Two endpoints are
+  ASYNC (see below) and return `{"id": "..."}` instead — poll
+  `GET /v2beta/results/{id}` until it resolves to the image.
+- On sync success, read the `finish-reason` and `seed` response headers.
+  Treat `finish-reason: CONTENT_FILTERED` as a distinct moderation error,
+  not a generic failure — surface the actual reason to the user.
+- On error (400/403/413/422/429/500), parse the JSON error body
+  (`{id, name, message}`) and raise with the real `message`, not a generic
+  ComfyUI exception.
+- Image conversion: ComfyUI IMAGE tensor <-> raw bytes for all `image`,
+  `mask`, `subject_image`, `style_image`, `init_image`, `background_reference`,
+  `light_reference` fields. Mask inputs should accept ComfyUI's native MASK
+  type; several endpoints alternatively accept a mask via the input image's
+  alpha channel — support both where the spec allows it (see `erase` and
+  `inpaint`).
+- Every node's output is a ComfyUI IMAGE tensor, so results can chain into
+  SaveImage, PreviewImage, or straight into another one of these nodes
+  (e.g. generate -> upscale -> edit).
+- Shared `style_preset` COMBO (used by several endpoints below): 3d-model,
+  analog-film, anime, cinematic, comic-book, digital-art, enhance,
+  fantasy-art, isometric, line-art, low-poly, modeling-compound, neon-punk,
+  origami, photographic, pixel-art, tile-texture. Define this once and
+  reuse it.
+
+## Generate
+
+### generate/ultra — POST /v2beta/stable-image/generate/ultra
+Text-to-image AND image-to-image (image is optional).
+- prompt (required, multiline STRING)
+- negative_prompt (optional STRING)
+- aspect_ratio (COMBO, default "1:1": 16:9, 1:1, 21:9, 2:3, 3:2, 4:5, 5:4,
+  9:16, 9:21)
+- seed (INT, default 0 = random, range 0-4294967294)
+- output_format (COMBO, default "png": jpeg, png, webp)
+- image (optional IMAGE input) — when connected, `strength` becomes
+  required by the API; enforce that in the node (raise a clear error if
+  image is connected but strength wasn't set)
+- strength (FLOAT, 0-1, only meaningful when image is connected): denoising
+  strength — 0 keeps the input image unchanged, 1 ignores it
+- style_preset (optional, shared COMBO)
+
+### generate/core — POST /v2beta/stable-image/generate/core
+Basic text-to-image, no image input. Fast/affordable tier.
+- prompt (required, multiline STRING)
+- negative_prompt (optional STRING)
+- aspect_ratio (COMBO, default "1:1", same 9 values as above)
+- seed (INT, default 0, range 0-4294967294)
+- style_preset (optional, shared COMBO)
+- output_format (COMBO, default "png": jpeg, png, webp)
+
+### generate/sd3 — POST /v2beta/stable-image/generate/sd3
+Text-to-image AND image-to-image via `mode`.
+- prompt (required, multiline STRING)
+- mode (COMBO, default "text-to-image": text-to-image, image-to-image)
+- image (IMAGE input, required only when mode = image-to-image)
+- strength (FLOAT, 0-1, required only when mode = image-to-image)
+- aspect_ratio (COMBO, default "1:1", same 9 values — valid ONLY for
+  text-to-image; hide/ignore when mode = image-to-image)
+- model (COMBO, default "sd3.5-large": sd3.5-large, sd3.5-large-turbo,
+  sd3.5-medium) — note in a tooltip that these have different credit costs
+  (6.5 / 4 / lower respectively — check the spec description field for
+  exact current numbers, they may change)
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png": jpeg, png, webp)
+- style_preset (optional, shared COMBO)
+- negative_prompt (optional STRING)
+- cfg_scale (FLOAT, 1-10): how strictly the model follows the prompt
+
+Enforce mode-dependent required fields in the node's validation, not just
+via API error round-trips.
+
+## Edit
+
+All Edit endpoints are synchronous except where noted.
+
+### edit/erase — POST /v2beta/stable-image/edit/erase
+- image (required IMAGE input)
+- mask (optional IMAGE/MASK input — if omitted, the image's alpha channel
+  is used as the mask)
+- grow_mask (INT, 0-20, default 5): expands mask edges outward, blurred
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png": jpeg, png, webp)
+
+### edit/inpaint — POST /v2beta/stable-image/edit/inpaint
+- image (required IMAGE input)
+- prompt (required, multiline STRING)
+- negative_prompt (optional STRING)
+- mask (optional IMAGE/MASK input — alpha channel fallback as above)
+- grow_mask (INT, 0-100, default 5)
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png")
+- style_preset (optional, shared COMBO)
+
+### edit/outpaint — POST /v2beta/stable-image/edit/outpaint
+- image (required IMAGE input)
+- left, right, up, down (INT each, 0-2000, default 0): pixels to add per
+  side. At least one must be non-zero — validate this client-side before
+  calling the API.
+- creativity (FLOAT, 0-1, default 0.5)
+- prompt (optional STRING)
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png")
+- style_preset (optional, shared COMBO)
+
+### edit/search-and-replace — POST /v2beta/stable-image/edit/search-and-replace
+No mask needed — the model segments automatically from `search_prompt`.
+- image (required IMAGE input)
+- prompt (required STRING): what to generate in place of the found object
+- search_prompt (required STRING): short description of what to find/replace
+- negative_prompt (optional STRING)
+- grow_mask (INT, 0-20, default 3)
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png")
+- style_preset (optional, shared COMBO)
+
+### edit/search-and-recolor — POST /v2beta/stable-image/edit/search-and-recolor
+- image (required IMAGE input)
+- prompt (required STRING): the new color/description
+- select_prompt (required STRING): what object to find and recolor
+- negative_prompt (optional STRING)
+- grow_mask (INT, 0-20, default 3)
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png")
+- style_preset (optional, shared COMBO)
+
+### edit/remove-background — POST /v2beta/stable-image/edit/remove-background
+Simplest node in the package — one input, one option.
+- image (required IMAGE input)
+- output_format (COMBO, default "png": png, webp only — no jpeg, since
+  transparency needs to survive)
+
+### edit/replace-background-and-relight — POST /v2beta/stable-image/edit/replace-background-and-relight
+**ASYNC** — returns `{"id": ...}`, poll `GET /v2beta/results/{id}` until
+ready. This is the most complex node in the package.
+- subject_image (required IMAGE input)
+- background_reference (optional IMAGE input): style reference for the
+  background, similar to Control: Style
+- background_prompt (optional STRING): description of desired background
+- foreground_prompt (optional STRING): description of the subject, used to
+  stop background elements bleeding into it
+- negative_prompt (optional STRING)
+- preserve_original_subject (FLOAT, 0-1, default 0.6): 1.0 = exact pixel
+  match to original subject, 0.0 = looser match
+- original_background_depth (FLOAT, 0-1, default 0.5)
+- keep_original_background (BOOLEAN, default false) — API expects the
+  literal strings "true"/"false", not JSON booleans; convert accordingly
+  when building the multipart body
+- light_source_direction (COMBO, optional, no default: above, below, left,
+  right)
+- light_reference (optional IMAGE input): lighter areas = brighter output
+  lighting
+- light_source_strength (FLOAT, 0-1, default 0.3): only meaningful with
+  light_reference or light_source_direction set
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png": jpeg, png, webp)
+
+## Upscale
+
+### upscale/fast — POST /v2beta/stable-image/upscale/fast
+Simplest upscale node. Sync, ~1 second.
+- image (required IMAGE input)
+- output_format (COMBO, default "png": jpeg, png, webp)
+
+### upscale/conservative — POST /v2beta/stable-image/upscale/conservative
+Sync. Minimal alteration to original, up to 4MP output.
+- image (required IMAGE input)
+- prompt (required STRING)
+- negative_prompt (optional STRING)
+- creativity (FLOAT, 0.2-0.5, default 0.35): likelihood of adding details
+  not strongly conditioned by the input image
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png")
+
+### upscale/creative — POST /v2beta/stable-image/upscale/creative
+**ASYNC** — returns `{"id": ...}`, poll `GET /v2beta/results/{id}` (or the
+endpoint-specific `GET /v2beta/stable-image/upscale/creative/result/{id}`
+— check the spec for which is preferred). For heavily degraded/low-res
+input images, adds creative detail.
+- image (required IMAGE input)
+- prompt (required STRING)
+- negative_prompt (optional STRING)
+- creativity (FLOAT, 0.1-0.5, default 0.3): higher = more added detail
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png")
+- style_preset (optional, shared COMBO)
+
+## Control
+
+Fixed image sockets (max two images on any Control endpoint) — no dynamic
+socket handling needed here, unlike a growable-reference-image package.
+
+### control/sketch — POST /v2beta/stable-image/control/sketch
+- image (required IMAGE input): sketch/line-art
+- prompt (required STRING)
+- control_strength (FLOAT, 0-1, default 0.7)
+- negative_prompt (optional STRING)
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png")
+- style_preset (optional, shared COMBO)
+
+### control/structure — POST /v2beta/stable-image/control/structure
+Same fields as sketch (image, prompt, control_strength default 0.7,
+negative_prompt, seed, output_format, style_preset) — `image` here is a
+structural reference rather than a sketch.
+
+### control/style — POST /v2beta/stable-image/control/style
+- prompt (required STRING)
+- image (required IMAGE input): style reference
+- negative_prompt (optional STRING)
+- aspect_ratio (COMBO, default "1:1", same 9-value set as Generate)
+- fidelity (FLOAT, 0-1, default 0.5): how closely output matches reference
+  style
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png")
+- style_preset (optional, shared COMBO)
+
+### control/style-transfer — POST /v2beta/stable-image/control/style-transfer
+- init_image (required IMAGE input): content/composition to preserve
+- style_image (required IMAGE input): style to apply
+- prompt (optional STRING)
+- negative_prompt (optional STRING)
+- style_strength (FLOAT, 0-1, default 1)
+- composition_fidelity (FLOAT, 0-1, default 0.9)
+- change_strength (FLOAT, 0.1-1, default 0.9)
+- seed (INT, default 0, range 0-4294967294)
+- output_format (COMBO, default "png": jpeg, png, webp)
+
+## Package layout
+
+Standard custom_nodes structure:
+- `__init__.py` with NODE_CLASS_MAPPINGS / NODE_DISPLAY_NAME_MAPPINGS for
+  all 15 nodes, grouped by category (api node/image/stability/generate,
+  .../edit, .../upscale, .../control) so they're organized in ComfyUI's
+  node browser
+- shared base module for auth, multipart building, sync response handling,
+  and the async poll loop
+- requirements.txt (requests, torch, numpy, pillow)
+- README covering install, STABILITY_API_KEY setup, and a table marking
+  which nodes are sync vs async
+
+Build and test remove-background and generate/core first — they're the
+simplest sync nodes with no masks or async logic, good smoke tests for the
+shared base class before tackling the more complex nodes (replace-
+background-and-relight, creative upscale) that need the polling path.
+```

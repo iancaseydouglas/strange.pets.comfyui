@@ -1,0 +1,229 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -460,
+        40
+      ],
+      "size": [
+        400,
+        470
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653",
+      "widgets_values": [
+        "## Style transfer with FLUX.2\n\n**input_image** \u2014 the picture whose composition you keep.\n**input_image_2** \u2014 the picture you take the look from.\n\nSocket order matters. The prompt says \"the first image\" and \"the second image\", so swapping the two Load Image nodes reverses the effect.\n\n`disable_pup` is **on**. FLUX.2 [pro] rewrites prompts by default and that rewrite tends to soften a precise instruction like this one. Turn it off if you would rather it embellish.\n\n`width` / `height` are **0** \u2014 match the input image. Any other value must be at least 64.\n\nConnect a third reference and a fourth socket appears, up to 8.\n\n### Prompt shape that works\n> Redraw the first image in the style of the second. Keep *(what stays)*. Take only *(what transfers)*.\n\nNaming what must **not** change is what keeps the subject intact."
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        274,
+        314
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "title": "Content \u2014 composition to keep",
+      "widgets_values": [
+        "example.png",
+        "image"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        420
+      ],
+      "size": [
+        274,
+        314
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "title": "Style \u2014 look to borrow",
+      "widgets_values": [
+        "example.png",
+        "image"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "BFLFlux2Pro",
+      "pos": [
+        400,
+        60
+      ],
+      "size": [
+        430,
+        530
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 1,
+          "shape": 7
+        },
+        {
+          "name": "input_image_2",
+          "type": "IMAGE",
+          "link": 2,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Pro"
+      },
+      "title": "FLUX.2 [pro] \u2014 style transfer",
+      "widgets_values": [
+        "Redraw the first image in the visual style of the second image.\n\nKeep from the first image: the composition, the subject and its pose, the framing, and the position of every element.\n\nTake from the second image only: the color palette, the brushwork and line quality, the surface texture, and the lighting treatment.\n\nDo not copy any object, person, or subject matter from the second image.",
+        true,
+        -1,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        ""
+      ]
+    },
+    {
+      "id": 5,
+      "type": "SaveImage",
+      "pos": [
+        900,
+        60
+      ],
+      "size": [
+        480,
+        500
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux2/style_transfer"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      1,
+      "IMAGE"
+    ],
+    [
+      3,
+      4,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        480,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}

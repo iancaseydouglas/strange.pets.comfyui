@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# strange-pets result cache (when run outside ComfyUI it lands beside the pack)
+strange-pets-cache/

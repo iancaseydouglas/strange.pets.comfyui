@@ -1,0 +1,132 @@
+{
+  "last_node_id": 3,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -480,
+        40
+      ],
+      "size": [
+        430,
+        640
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "title": "Read me \u2014 batch & sweep",
+      "color": "#432",
+      "bgcolor": "#653",
+      "widgets_values": [
+        "## One node, many images\n\nThis node loops the API for you and returns a **list** of images, so the Save Image below runs once per result.\n\n### Where images come from\n- **input_path** \u2014 a file, a whole **folder**, or a glob (`shots/*.png`). Relative paths resolve under the ComfyUI **input** directory. Every file found becomes its own base.\n- Leave it empty for **text-to-image** variations.\n- Connect the **input_image** socket instead to feed an upstream node; it overrides input_path.\n\n### Where images go\n- **output_dir** \u2014 each result is written here (created if missing; relative to the ComfyUI **output** directory), with the model, swept value and seed in the filename, plus a `manifest.txt`. Leave empty to only pass them downstream.\n\n### Variations vs. sweep\n- **sweep_param = none**, **variations = 6** \u2192 six variations. With **seed = -1** each gets a fresh random seed.\n- **sweep_param = guidance**, **sweep_spec = `2..6:1`**, **seed fixed** \u2192 one image at each guidance value, seed held constant so only guidance changes. This graph is set up that way.\n\n### sweep_spec syntax\n- list: `3,5,7,9`\n- range: `1.5..8` (default step) or `1.5..8:0.5`\n- `steps` and `guidance` are **flux-2-flex only**.\n\n### Cost guard\nThe batch refuses to exceed **100** API calls in one run \u2014 narrow the sweep or lower variations. Every image is one paid call."
+      ]
+    },
+    {
+      "id": 2,
+      "type": "BFLFlux2BatchVariations",
+      "pos": [
+        30,
+        40
+      ],
+      "size": [
+        420,
+        600
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2BatchVariations"
+      },
+      "widgets_values": [
+        "flux-2-flex",
+        "example.png",
+        "flux2_batch",
+        "Generate a variation of this image. Keep the same subject, composition, and overall style; vary the fine detail, texture, and the quality of the light.",
+        "guidance",
+        "2..6:1",
+        3,
+        1,
+        12345,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        false,
+        false,
+        40,
+        5.0,
+        ""
+      ],
+      "title": "FLUX.2 Batch / Sweep"
+    },
+    {
+      "id": 3,
+      "type": "SaveImage",
+      "pos": [
+        500,
+        40
+      ],
+      "size": [
+        520,
+        560
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux2/batch"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6,
+      "offset": [
+        500,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}

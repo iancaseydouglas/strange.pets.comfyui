@@ -1,0 +1,462 @@
+{
+  "last_node_id": 10,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -460,
+        40
+      ],
+      "size": [
+        400,
+        520
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653",
+      "widgets_values": [
+        "## Four variations, four API calls\n\nEvery run bills **four** generations. Delete a branch to spend less; copy one to spend more.\n\nThe four nodes are identical apart from `seed` (1001\u20131004, all `fixed`), so the set is reproducible \u2014 same seeds, same four images. Set a seed to **-1** for a fresh random one on each run.\n\n`disable_pup` is **off** on purpose. FLUX.2 [pro] upsamples the prompt by default and rewrites it differently on each call, which widens the spread. Turn it **on** for tighter variations that differ mostly by seed.\n\nEach branch writes its own filename prefix so the outputs stay tellable apart on disk. Save Image previews inside the node, so there is no separate Preview node here.\n\n### Dialling the spread\n- **Narrow** \u2014 name what must not change: *\"same subject, same composition, same palette\"*.\n- **Wide** \u2014 ask for the change: *\"same subject, different time of day and camera angle\"*."
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        274,
+        314
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1,
+            3,
+            5,
+            7
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "title": "Image to vary",
+      "widgets_values": [
+        "example.png",
+        "image"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "BFLFlux2Pro",
+      "pos": [
+        400,
+        60
+      ],
+      "size": [
+        430,
+        530
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Pro"
+      },
+      "title": "Variation 1",
+      "widgets_values": [
+        "Create a new variation of this image. Keep the same subject, the same composition, and the same overall style, but vary the fine details, the surface texture, and the quality of the light.",
+        false,
+        1001,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        ""
+      ]
+    },
+    {
+      "id": 4,
+      "type": "SaveImage",
+      "pos": [
+        900,
+        60
+      ],
+      "size": [
+        460,
+        480
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "title": "Save variation 1",
+      "widgets_values": [
+        "flux2/variation_1"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "BFLFlux2Pro",
+      "pos": [
+        400,
+        640
+      ],
+      "size": [
+        430,
+        530
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 3,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Pro"
+      },
+      "title": "Variation 2",
+      "widgets_values": [
+        "Create a new variation of this image. Keep the same subject, the same composition, and the same overall style, but vary the fine details, the surface texture, and the quality of the light.",
+        false,
+        1002,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        ""
+      ]
+    },
+    {
+      "id": 6,
+      "type": "SaveImage",
+      "pos": [
+        900,
+        640
+      ],
+      "size": [
+        460,
+        480
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "title": "Save variation 2",
+      "widgets_values": [
+        "flux2/variation_2"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "BFLFlux2Pro",
+      "pos": [
+        400,
+        1220
+      ],
+      "size": [
+        430,
+        530
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Pro"
+      },
+      "title": "Variation 3",
+      "widgets_values": [
+        "Create a new variation of this image. Keep the same subject, the same composition, and the same overall style, but vary the fine details, the surface texture, and the quality of the light.",
+        false,
+        1003,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        ""
+      ]
+    },
+    {
+      "id": 8,
+      "type": "SaveImage",
+      "pos": [
+        900,
+        1220
+      ],
+      "size": [
+        460,
+        480
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "title": "Save variation 3",
+      "widgets_values": [
+        "flux2/variation_3"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "BFLFlux2Pro",
+      "pos": [
+        400,
+        1800
+      ],
+      "size": [
+        430,
+        530
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 7,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Pro"
+      },
+      "title": "Variation 4",
+      "widgets_values": [
+        "Create a new variation of this image. Keep the same subject, the same composition, and the same overall style, but vary the fine details, the surface texture, and the quality of the light.",
+        false,
+        1004,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        ""
+      ]
+    },
+    {
+      "id": 10,
+      "type": "SaveImage",
+      "pos": [
+        900,
+        1800
+      ],
+      "size": [
+        460,
+        480
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "title": "Save variation 4",
+      "widgets_values": [
+        "flux2/variation_4"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      2,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      5,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      2,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      2,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      9,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.45,
+      "offset": [
+        520,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}

@@ -1,0 +1,262 @@
+{
+  "last_node_id": 6,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -500,
+        40
+      ],
+      "size": [
+        420,
+        640
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "title": "Read me \u2014 there is no ControlNet here",
+      "color": "#432",
+      "bgcolor": "#653",
+      "widgets_values": [
+        "## The FLUX.2 API has no ControlNet\n\n`bfl_openapi.json` exposes only the flux-2-* generation endpoints, and their schemas carry no control fields \u2014 no canny endpoint, no depth endpoint, no control strength.\n\nThe FLUX.2 equivalent is to build the control map **locally** and hand it to the model as a *reference image*, then say in the prompt what that image is for. That is this graph:\n\n**Load Image \u2192 Canny \u2192 input_image**\n\n### Tuning\nWatch the Preview under Canny. You want the structure readable and the noise gone \u2014 raise `low_threshold` to drop weak edges, lower it to keep more.\n\n`guidance` (flex only, 1.5\u201310) is the adherence knob. Push toward 7\u20138 if the output wanders off the edge map; drop toward 3 if it looks stiff and traced.\n\n`prompt_upsampling` is **off** so the structural instruction reaches the model intact.\n\n### Depth instead of edges\nCanny is ComfyUI core; depth is not. Install **comfyui_controlnet_aux**, drop in a `DepthAnythingV2Preprocessor`, feed Load Image into it, and connect its IMAGE output to `input_image` in place of Canny. Then rewrite the prompt's first line to describe a depth map \u2014 near is white, far is black \u2014 instead of edges.\n\n### Plain image-to-image\nSelect the Canny node and press **Ctrl+B** to bypass it. Load Image then feeds `input_image` directly and you get an ordinary edit of the photo. Rewrite the prompt as an instruction \u2014 \"change the ... to ...\" \u2014 when you do."
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        274,
+        314
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "title": "Structure source",
+      "widgets_values": [
+        "example.png",
+        "image"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "Canny",
+      "pos": [
+        370,
+        60
+      ],
+      "size": [
+        300,
+        106
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2,
+            3
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Canny"
+      },
+      "widgets_values": [
+        0.4,
+        0.8
+      ]
+    },
+    {
+      "id": 4,
+      "type": "PreviewImage",
+      "pos": [
+        370,
+        210
+      ],
+      "size": [
+        300,
+        290
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "title": "Check the edge map",
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "BFLFlux2Flex",
+      "pos": [
+        730,
+        60
+      ],
+      "size": [
+        430,
+        620
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 3,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Flex"
+      },
+      "title": "FLUX.2 [flex] \u2014 follows the edges",
+      "widgets_values": [
+        "The reference image is a Canny edge map. Treat every white line in it as the exact structural blueprint for the scene: object boundaries, perspective, and proportions must follow those lines precisely. Do not draw the lines themselves in the output.\n\nRender this scene onto that structure: a sunlit mid-century living room, low walnut sofa, large window, photorealistic, soft morning light, shallow depth of field.",
+        false,
+        50,
+        6.5,
+        -1,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        ""
+      ]
+    },
+    {
+      "id": 6,
+      "type": "SaveImage",
+      "pos": [
+        1230,
+        60
+      ],
+      "size": [
+        480,
+        500
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux2/structure"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      3,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      5,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        520,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}
