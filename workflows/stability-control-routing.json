@@ -1,0 +1,1302 @@
+{
+  "last_node_id": 23,
+  "last_link_id": 31,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        660,
+        1500
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "# Stability control endpoints, routed\n\nThe four endpoints in `api.stability.ai` that do ControlNet-shaped work, wired so the **same image can go through any combination of them without rewiring**.\n\n## The four, and what they actually hold\n\n| Node | Endpoint | Takes structure from | The dial |\n| --- | --- | --- | --- |\n| Control Sketch | `control/sketch` | the image, read as line art | `control_strength` 0-1 |\n| Control Structure | `control/structure` | the image, read as mass and depth | `control_strength` 0-1 |\n| Control Style | `control/style` | **nothing** | `fidelity` 0-1 |\n| Style Transfer | `control/style-transfer` | `init_image` | three separate dials |\n\n**Read that third row before you use it.** `control/style` does not preserve your image's composition at all \u2014 it takes the image as a *style* reference and generates a new picture from the prompt, at whatever `aspect_ratio` you set. It is the odd one out, and it is the one people wire up expecting structure and then wonder why nothing survived.\n\nStyle Transfer is the only one with a genuinely separable vector: `style_strength` (how much of the reference's look lands), `composition_fidelity` (how hard the init image's composition is held \u2014 raise this when structure drifts), and `change_strength` (how far from the init image it may travel at all).\n\n## How the routing works\n\nEvery stage is preceded by an **Image Switch**, and `select` is the only thing you change:\n\n```\nSwitch 1  ->  Sketch      1=source  2=line map\nSwitch 2  ->  Structure   1=source  2=line map  3=sketch out\nSwitch 3  ->  Style       1=source  2=line map  3=sketch out  4=structure out\nSwitch 4  ->  Transfer    1=source  2=line map  3=sketch out  4=structure out  5=style out\n```\n\n- **All four set to 1** - every endpoint runs off the source independently. This is compare mode: four takes on the same image, side by side.\n- **1, 3, 4, 5** - a serial chain: source into Sketch, its output into Structure, that into Style, that into Transfer.\n- **Anything between** - Structure off the source, Style off Structure's output, Transfer off the source again. Sixteen subsets, and every sub-sequence in this order.\n\n**Order is fixed by the wiring, and that is a real constraint rather than an oversight.** A ComfyUI graph must be acyclic, so a switch can only read from stages *above* it - wiring Structure to read Style's output while Style reads Structure's would be a cycle and the graph would refuse to run. To try a different order, drag the connections. The switches give you every combination; they cannot give you every permutation.\n\n## Cost\n\n**Every un-bypassed stage is one paid call, whether or not you use its output.** A default run is four calls. To drop a stage, select it and press **Ctrl+B** - bypass passes the input straight through to the output, so downstream switches reading it receive whatever went in, and the stage costs nothing. That is the cheap way to explore: bypass three, study one.\n\n## Keep the seed fixed\n\nThe seed widgets are set to **7**, not 0. Stability treats **seed 0 as \"pick a random one\"**, which means two runs are never comparable and nothing is ever served from cache. With a fixed seed the only thing changing between runs is the routing you changed - and every request you have already made comes back from the local cache for free, so re-running after adjusting one downstream dial costs only that stage.\n\n## The line map\n\n`control/sketch` wants line art. **Canny** builds it locally, and **Invert Image** flips Canny's white-on-black to the dark-lines-on-light a sketch endpoint expects. Watch the preview: raise `low_threshold` to drop weak edges, lower it to keep more. Bypass the invert (Ctrl+B) if your source is already a drawing.\n\n## Why this is here at all\n\nThe FLUX.2 API exposes no control parameters - no control strength, no style weight, nothing. These four endpoints are the only place in this pack where structural adherence is a **number you set** rather than a sentence you phrase. If you are trying to feel out what a fidelity dial actually does, do it here, then carry the intuition back to the FLUX.2 side."
+      ],
+      "title": "Read me \u2014 routing the control endpoints",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        760,
+        60
+      ],
+      "size": [
+        320,
+        320
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1,
+            4,
+            7,
+            11,
+            16
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Source \u2014 the one image"
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        760,
+        420
+      ],
+      "size": [
+        320,
+        320
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            22
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Style reference (Transfer only)"
+    },
+    {
+      "id": 4,
+      "type": "Canny",
+      "pos": [
+        760,
+        780
+      ],
+      "size": [
+        300,
+        110
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Canny"
+      },
+      "widgets_values": [
+        0.2,
+        0.6
+      ],
+      "title": "Line map"
+    },
+    {
+      "id": 5,
+      "type": "ImageInvert",
+      "pos": [
+        760,
+        930
+      ],
+      "size": [
+        300,
+        60
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 2,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            3,
+            5,
+            8,
+            12,
+            17
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageInvert"
+      },
+      "widgets_values": [],
+      "title": "Dark lines on light \u2014 Ctrl+B if already a drawing"
+    },
+    {
+      "id": 6,
+      "type": "PreviewImage",
+      "pos": [
+        760,
+        1030
+      ],
+      "size": [
+        300,
+        300
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Check the line map"
+    },
+    {
+      "id": 7,
+      "type": "SPImageSwitch",
+      "pos": [
+        1140,
+        60
+      ],
+      "size": [
+        280,
+        150
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_1",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "image_2",
+          "type": "IMAGE",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPImageSwitch"
+      },
+      "widgets_values": [
+        1
+      ],
+      "title": "Switch 1 \u2192 Sketch"
+    },
+    {
+      "id": 8,
+      "type": "StabAIControlSketch",
+      "pos": [
+        1480,
+        60
+      ],
+      "size": [
+        400,
+        420
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 6,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            9,
+            13,
+            18,
+            23,
+            27
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlSketch"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        0.7,
+        "photographic, 3d render, watermark, text",
+        7,
+        "fixed",
+        "png",
+        "none",
+        ""
+      ],
+      "title": "A \u00b7 control/sketch"
+    },
+    {
+      "id": 9,
+      "type": "SPImageSwitch",
+      "pos": [
+        1140,
+        500
+      ],
+      "size": [
+        280,
+        170
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_1",
+          "type": "IMAGE",
+          "link": 7,
+          "shape": 7
+        },
+        {
+          "name": "image_2",
+          "type": "IMAGE",
+          "link": 8,
+          "shape": 7
+        },
+        {
+          "name": "image_3",
+          "type": "IMAGE",
+          "link": 9,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            10
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPImageSwitch"
+      },
+      "widgets_values": [
+        1
+      ],
+      "title": "Switch 2 \u2192 Structure"
+    },
+    {
+      "id": 10,
+      "type": "StabAIControlStructure",
+      "pos": [
+        1480,
+        500
+      ],
+      "size": [
+        400,
+        420
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 10,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            14,
+            19,
+            24,
+            28
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlStructure"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        0.7,
+        "photographic, 3d render, watermark, text",
+        7,
+        "fixed",
+        "png",
+        "none",
+        ""
+      ],
+      "title": "B \u00b7 control/structure"
+    },
+    {
+      "id": 11,
+      "type": "SPImageSwitch",
+      "pos": [
+        1140,
+        940
+      ],
+      "size": [
+        280,
+        190
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_1",
+          "type": "IMAGE",
+          "link": 11,
+          "shape": 7
+        },
+        {
+          "name": "image_2",
+          "type": "IMAGE",
+          "link": 12,
+          "shape": 7
+        },
+        {
+          "name": "image_3",
+          "type": "IMAGE",
+          "link": 13,
+          "shape": 7
+        },
+        {
+          "name": "image_4",
+          "type": "IMAGE",
+          "link": 14,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            15
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPImageSwitch"
+      },
+      "widgets_values": [
+        1
+      ],
+      "title": "Switch 3 \u2192 Style"
+    },
+    {
+      "id": 12,
+      "type": "StabAIControlStyle",
+      "pos": [
+        1480,
+        940
+      ],
+      "size": [
+        400,
+        440
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 15,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            20,
+            25,
+            29
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlStyle"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        "photographic, 3d render, watermark, text",
+        "4:5",
+        0.5,
+        7,
+        "fixed",
+        "png",
+        "none",
+        ""
+      ],
+      "title": "C \u00b7 control/style \u2014 keeps NO structure"
+    },
+    {
+      "id": 13,
+      "type": "SPImageSwitch",
+      "pos": [
+        1140,
+        1400
+      ],
+      "size": [
+        280,
+        210
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_1",
+          "type": "IMAGE",
+          "link": 16,
+          "shape": 7
+        },
+        {
+          "name": "image_2",
+          "type": "IMAGE",
+          "link": 17,
+          "shape": 7
+        },
+        {
+          "name": "image_3",
+          "type": "IMAGE",
+          "link": 18,
+          "shape": 7
+        },
+        {
+          "name": "image_4",
+          "type": "IMAGE",
+          "link": 19,
+          "shape": 7
+        },
+        {
+          "name": "image_5",
+          "type": "IMAGE",
+          "link": 20,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            21
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPImageSwitch"
+      },
+      "widgets_values": [
+        1
+      ],
+      "title": "Switch 4 \u2192 Transfer init"
+    },
+    {
+      "id": 14,
+      "type": "StabAIControlStyleTransfer",
+      "pos": [
+        1480,
+        1400
+      ],
+      "size": [
+        400,
+        440
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "init_image",
+          "type": "IMAGE",
+          "link": 21,
+          "shape": 7
+        },
+        {
+          "name": "style_image",
+          "type": "IMAGE",
+          "link": 22,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            26,
+            30
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlStyleTransfer"
+      },
+      "widgets_values": [
+        "",
+        "photographic, 3d render, watermark, text",
+        1.0,
+        0.9,
+        0.9,
+        7,
+        "fixed",
+        "png",
+        ""
+      ],
+      "title": "D \u00b7 control/style-transfer"
+    },
+    {
+      "id": 15,
+      "type": "PreviewImage",
+      "pos": [
+        1940,
+        60
+      ],
+      "size": [
+        320,
+        400
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 23,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "A \u00b7 sketch"
+    },
+    {
+      "id": 16,
+      "type": "PreviewImage",
+      "pos": [
+        1940,
+        500
+      ],
+      "size": [
+        320,
+        400
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 24,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "B \u00b7 structure"
+    },
+    {
+      "id": 17,
+      "type": "PreviewImage",
+      "pos": [
+        1940,
+        940
+      ],
+      "size": [
+        320,
+        400
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 25,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "C \u00b7 style"
+    },
+    {
+      "id": 18,
+      "type": "PreviewImage",
+      "pos": [
+        1940,
+        1400
+      ],
+      "size": [
+        320,
+        400
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 26,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "D \u00b7 transfer"
+    },
+    {
+      "id": 19,
+      "type": "SPImageSwitch",
+      "pos": [
+        2320,
+        60
+      ],
+      "size": [
+        280,
+        210
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_1",
+          "type": "IMAGE",
+          "link": 27,
+          "shape": 7
+        },
+        {
+          "name": "image_2",
+          "type": "IMAGE",
+          "link": 28,
+          "shape": 7
+        },
+        {
+          "name": "image_3",
+          "type": "IMAGE",
+          "link": 29,
+          "shape": 7
+        },
+        {
+          "name": "image_4",
+          "type": "IMAGE",
+          "link": 30,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            31
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPImageSwitch"
+      },
+      "widgets_values": [
+        1
+      ],
+      "title": "The keeper"
+    },
+    {
+      "id": 20,
+      "type": "SPSaveImagesToDirectory",
+      "pos": [
+        2320,
+        320
+      ],
+      "size": [
+        400,
+        360
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 31,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "paths",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSaveImagesToDirectory"
+      },
+      "widgets_values": [
+        "stability/control",
+        "{prefix}_{datetime}",
+        "control",
+        "png",
+        95,
+        true,
+        false,
+        true,
+        false
+      ],
+      "title": "Save the keeper"
+    },
+    {
+      "id": 21,
+      "type": "SPCostReport",
+      "pos": [
+        2320,
+        720
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "credits",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "calls",
+          "type": "INT",
+          "links": null,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPCostReport"
+      },
+      "widgets_values": [
+        false
+      ],
+      "title": "Four calls a run, unless you bypass"
+    },
+    {
+      "id": 22,
+      "type": "SPCacheTools",
+      "pos": [
+        2320,
+        960
+      ],
+      "size": [
+        400,
+        180
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPCacheTools"
+      },
+      "widgets_values": [
+        "status"
+      ],
+      "title": "Fixed seeds land here"
+    },
+    {
+      "id": 23,
+      "type": "SPKeyStatus",
+      "pos": [
+        2320,
+        1180
+      ],
+      "size": [
+        400,
+        220
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPKeyStatus"
+      },
+      "widgets_values": [
+        "all"
+      ],
+      "title": "STABILITY_API_KEY"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      4,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      5,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      2,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      5,
+      0,
+      7,
+      1,
+      "IMAGE"
+    ],
+    [
+      6,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      2,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      5,
+      0,
+      9,
+      1,
+      "IMAGE"
+    ],
+    [
+      9,
+      8,
+      0,
+      9,
+      2,
+      "IMAGE"
+    ],
+    [
+      10,
+      9,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      11,
+      2,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      5,
+      0,
+      11,
+      1,
+      "IMAGE"
+    ],
+    [
+      13,
+      8,
+      0,
+      11,
+      2,
+      "IMAGE"
+    ],
+    [
+      14,
+      10,
+      0,
+      11,
+      3,
+      "IMAGE"
+    ],
+    [
+      15,
+      11,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      2,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      17,
+      5,
+      0,
+      13,
+      1,
+      "IMAGE"
+    ],
+    [
+      18,
+      8,
+      0,
+      13,
+      2,
+      "IMAGE"
+    ],
+    [
+      19,
+      10,
+      0,
+      13,
+      3,
+      "IMAGE"
+    ],
+    [
+      20,
+      12,
+      0,
+      13,
+      4,
+      "IMAGE"
+    ],
+    [
+      21,
+      13,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      22,
+      3,
+      0,
+      14,
+      1,
+      "IMAGE"
+    ],
+    [
+      23,
+      8,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      24,
+      10,
+      0,
+      16,
+      0,
+      "IMAGE"
+    ],
+    [
+      25,
+      12,
+      0,
+      17,
+      0,
+      "IMAGE"
+    ],
+    [
+      26,
+      14,
+      0,
+      18,
+      0,
+      "IMAGE"
+    ],
+    [
+      27,
+      8,
+      0,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      28,
+      10,
+      0,
+      19,
+      1,
+      "IMAGE"
+    ],
+    [
+      29,
+      12,
+      0,
+      19,
+      2,
+      "IMAGE"
+    ],
+    [
+      30,
+      14,
+      0,
+      19,
+      3,
+      "IMAGE"
+    ],
+    [
+      31,
+      19,
+      0,
+      20,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Source + line map",
+      "bounding": [
+        740,
+        -20,
+        360,
+        1380
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Routing",
+      "bounding": [
+        1120,
+        -20,
+        320,
+        1660
+      ],
+      "color": "#88A",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "The four endpoints",
+      "bounding": [
+        1460,
+        -20,
+        440,
+        1880
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Compare",
+      "bounding": [
+        1920,
+        -20,
+        360,
+        1840
+      ],
+      "color": "#A88",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Keep + measure",
+      "bounding": [
+        2300,
+        -20,
+        440,
+        1440
+      ],
+      "color": "#A8A",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.35,
+      "offset": [
+        760,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

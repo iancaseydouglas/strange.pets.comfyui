@@ -181,7 +181,7 @@ with its parameter values.
 
 ## Workflows
 
-`workflows/` holds nine ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use
+`workflows/` holds eleven ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use
 **Workflow → Open**. Each one carries a note node explaining its own knobs. The four general
 graphs start pointed at `example.png` — the image ComfyUI ships in its `input/` folder — so
 swap in your own; the five deck graphs point at `tarot/…` paths under the input and output
@@ -195,6 +195,12 @@ directories.
 | `flux2-structure-canny.json` | Load Image → `Canny` → FLUX.2 [flex], so a generated scene follows the edges of a source photo. |
 | `flux2-variations.json` | One image into four [pro] nodes on fixed seeds 1001–1004, each saving under its own prefix. Four API calls per run. |
 | `flux2-batch-sweep.json` | The Batch / Sweep node reading a local file, sweeping `guidance` `2..6` on [flex] with a fixed seed, and writing each result to an output directory. One node, five calls. |
+
+**Stability control:**
+
+| File | What it does |
+| --- | --- |
+| `stability-control-routing.json` | The four ControlNet-shaped Stability endpoints — `control/sketch`, `control/structure`, `control/style`, `control/style-transfer` — wired so one image can go through any combination of them by changing four integers. Every stage sits behind an Image Switch that can read the source, a local Canny line map, or any earlier stage's output. All switches on `1` runs the four in parallel off the source (compare mode); a cascade of `1,3,4,5` makes them a serial chain. |
 
 **Deck work** — these use the Tarot nodes and are built around a set of cards rather than one
 image:
@@ -780,6 +786,34 @@ ComfyUI `IMAGE`, so they chain freely into each other and into the FLUX.2 nodes
 The two async nodes POST, receive `{"id": ...}`, then poll `GET /v2beta/results/{id}`
 (202 = still running, 200 = done) and block until the image is ready. Results stay
 fetchable for 24 hours.
+
+### Routing the control endpoints
+
+`workflows/stability-control-routing.json` exists because these four are the only place in
+the pack where structural adherence is **a number you set** rather than a sentence you phrase
+— the FLUX.2 API exposes no control parameters at all. It is the graph to use when you want
+to feel out what a fidelity dial actually does.
+
+Two things it is built to stop you tripping over:
+
+**`control/style` keeps no structure.** It reads the image as a *style* reference and
+generates a new picture from the prompt at whatever `aspect_ratio` you set. The other three
+take structure from the image; this one does not, and it is the one people wire up expecting
+composition to survive.
+
+**Order is fixed by the wiring, and that is a constraint rather than an oversight.** A ComfyUI
+graph must be acyclic, so a switch can only read stages above it — wiring Structure to read
+Style's output while Style reads Structure's is a cycle and the graph refuses to run. The
+switches give you every *combination* and every sub-sequence in that order; they cannot give
+you every permutation. Drag the connections for a different order.
+
+Every un-bypassed stage is a paid call whether or not you use its result, so a default run is
+four. **Ctrl+B** bypasses a stage — the input passes straight through to the output, so
+downstream switches receive whatever went in and the stage costs nothing.
+
+The seeds are set to **7 rather than 0** on purpose: Stability treats seed 0 as "pick a random
+one", which makes two runs incomparable and means nothing is ever served from cache. Fixed
+seeds make the routing the only variable, and make re-runs free.
 
 ### Masks
 
