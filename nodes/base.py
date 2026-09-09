@@ -31,6 +31,7 @@ from .runtime import (
     record_call,
     request_with_retry,
     resolve_secret,
+    transport_advice,
 )
 
 API_BASE = "https://api.bfl.ai"
@@ -134,7 +135,8 @@ def submit_task(endpoint, payload, api_key):
             label=endpoint,
         )
     except requests.RequestException as exc:
-        raise BFLApiError("Could not reach {}: {}".format(url, exc)) from exc
+        raise BFLApiError(
+            "Could not reach {}: {}{}".format(url, exc, transport_advice(exc))) from exc
 
     if response.status_code >= 400:
         raise BFLApiError(

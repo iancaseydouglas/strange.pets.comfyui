@@ -164,7 +164,29 @@ with `STRANGE_PETS_CACHE=0` and `STRANGE_PETS_CACHE_DIR`, and inspect or clear i
 **Retries.** 429 and 5xx responses are retried with exponential backoff, honouring
 `Retry-After`. Stability documents its limit as 150 requests per 10 seconds; BFL documents
 no 429 at all but can still throttle, so both retry defensively.
-`STRANGE_PETS_RETRIES` sets the attempt count (default 3).
+`STRANGE_PETS_RETRIES` sets that attempt count (default 3).
+
+**Transport faults get their own, larger budget** — `STRANGE_PETS_TRANSPORT_RETRIES`
+(default 5). A TLS error, a DNS failure or a reset connection is a property of the *link*
+rather than of the request, so redialling is far more likely to work than another attempt
+against a 429 is, and a failed attempt costs nothing because no request ever completed.
+These calls upload a whole image, which makes them the first thing an unstable or
+TLS-inspected connection breaks.
+
+When one does fail, the error says what the failure probably means rather than only
+reprinting the exception — `SSLV3_ALERT_BAD_RECORD_MAC` is a corrupted stream, which is
+almost always local (antivirus or a VPN inspecting HTTPS, or a flaky link) and always means
+nothing was generated and nothing was charged.
+
+**Uploads pick their own format.** Stability's spec accepts jpeg, png and webp for every
+image field, and which one is smaller depends entirely on the picture: flat colour and
+linework — a tarot card — went **157 KB as PNG against 868 KB as JPEG** in testing, while a
+photographic frame went 3.1 MB as PNG against 1.2 MB as JPEG. So both are encoded and the
+smaller is sent. Encoding twice is trivial next to sending the wrong one over a link that is
+already the fragile part. An image carrying alpha is always PNG, because several endpoints
+mask by the alpha channel and flattening it would quietly change what they do.
+`STRANGE_PETS_UPLOAD_FORMAT` (`auto`, `png`, `jpeg`) and `STRANGE_PETS_UPLOAD_QUALITY`
+override it.
 
 **Cost.** BFL returns `cost`, `input_mp` and `output_mp` on every submit — the pack records
 them instead of discarding them. The **Cost / Call Report** node totals credits per
@@ -181,7 +203,7 @@ with its parameter values.
 
 ## Workflows
 
-`workflows/` holds eleven ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use
+`workflows/` holds seventeen ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use
 **Workflow → Open**. Each one carries a note node explaining its own knobs. The four general
 graphs start pointed at `example.png` — the image ComfyUI ships in its `input/` folder — so
 swap in your own; the five deck graphs point at `tarot/…` paths under the input and output
@@ -200,6 +222,10 @@ directories.
 
 | File | What it does |
 | --- | --- |
+| `stability-01-sketch.json` | **One endpoint, studied alone.** `control/sketch` at three settings of `control_strength`, side by side. |
+| `stability-02-structure.json` | `control/structure` at three settings of `control_strength`. |
+| `stability-03-style.json` | `control/style` at three settings of `fidelity` — the one that keeps **no** structure. |
+| `stability-04-style-transfer.json` | `control/style-transfer` at three settings of `composition_fidelity`, with the other two dials pinned. |
 | `stability-control-routing.json` | The four ControlNet-shaped Stability endpoints — `control/sketch`, `control/structure`, `control/style`, `control/style-transfer` — wired so one image can go through any combination of them by changing four integers. Every stage sits behind an Image Switch that can read the source, a local Canny line map, or any earlier stage's output. All switches on `1` runs the four in parallel off the source (compare mode); a cascade of `1,3,4,5` makes them a serial chain. |
 
 **Deck work** — these use the Tarot nodes and are built around a set of cards rather than one
@@ -212,7 +238,9 @@ image:
 | `tarot-variation-sweep.json` | Two sweeps off one image on the same fixed seed — `guidance` and `steps` — each landing on its own labelled contact sheet, with the cost report beside them. |
 | `tarot-generate-and-edit.json` | A chain you sit inside: generate, then edit, then edit again, each stage taking the last result back in. Fixed seeds make every upstream stage a cache hit, so revising stage three costs only stage three. |
 | `tarot-deck-pipeline.json` | The whole thing. Manifest → slot loader → per-card prompts → generate → frame → lettering → save, plus a contact sheet of the finished deck. |
-| `tarot-deck-derive.json` | A deck derived from a deck: the full style cascade — invariants, a locked style, scoped layers over subsets, the fidelity vector — resolved per card, generated, assembled, saved and measured. Starts on the 12-card proof set. |
+| `tarot-01-generate.json` | **Stage 1 of 2.** Everything up to and including the paid calls: deck, cascade, resolve, generate. Ends by writing raw unframed art to `tarot/derived-art/` and the deck definition to `tarot/deck.json`. |
+| `tarot-02-assemble.json` | **Stage 2 of 2.** Picks up those two files and makes finished cards — frame, lettering, save, contact sheet, cohesion report. **No API calls at all**, so iterating on a border is free. |
+| `tarot-deck-derive.json` | The same work in one graph, when you want it end to end. A deck derived from a deck: the full style cascade — invariants, a locked style, scoped layers over subsets, the fidelity vector — resolved per card, generated, assembled, saved and measured. Starts on the 12-card proof set. |
 
 ### There is no ControlNet in the FLUX.2 API
 
@@ -686,6 +714,33 @@ wands     : warm — amber, ember, brass
 
 Hex codes are read out and rendered into that card's plate as a swatch tile.
 
+### Splitting a run in two
+
+ComfyUI has no mechanism for one workflow file to call another. **Subgraphs** (frontend 1.24.3+)
+collapse a group of nodes into one node inside a graph, and **Subgraph Blueprints** (1.27.7+)
+publish one to the node library so it can be reused across workflows — both are made through the
+UI, by selecting nodes and converting them. Neither is a file-level import.
+
+What does cross a file boundary is **the filesystem**, and for a deck run that is the better cut
+anyway. `tarot-01-generate.json` and `tarot-02-assemble.json` split the pipeline where the money
+is:
+
+- Stage 1 ends by writing raw art to `tarot/derived-art/` as `{index:02d}_{label}` — the exact
+  naming stage 2's Slot Loader maps back onto the right positions.
+- Stage 1 also writes the resolved deck to `tarot/deck.json` via `save_definition_to`, and stage 2
+  loads that same file through `definition_path` rather than re-declaring the deck. **That is what
+  stops the two stages drifting apart** on names, order or scope.
+
+Generation is slow and paid; borders and lettering are instant and free. In one graph every
+experiment with a keyline sits downstream of 78 API calls. Split, a border is a stage-2 problem
+you can work on all evening at no cost — and unlike the result cache, which evaporates the moment
+you change a word of the style block, a file on disk stays put. A deck generated months ago
+re-assembles from its two folders with no cascade, no keys and no cost.
+
+Renaming a card survives the crossing: the saved definition carries an `aliases` map of each
+renamed card's original slug, so a constraint or selector written against `the-tower` still
+resolves in the stage that only ever saw "The Lightning House".
+
 ### Read the report
 
 Resolve prints which layers each card ended up under, and flags cards that only ever matched
@@ -786,6 +841,36 @@ ComfyUI `IMAGE`, so they chain freely into each other and into the FLUX.2 nodes
 The two async nodes POST, receive `{"id": ...}`, then poll `GET /v2beta/results/{id}`
 (202 = still running, 200 = done) and block until the image is ready. Results stay
 fetchable for 24 hours.
+
+### One endpoint at a time
+
+`stability-01-…` through `-04-…` each isolate a single endpoint so you can learn what its dial
+does without another endpoint's behaviour mixed in. Each graph runs its endpoint **three times
+at three settings** and previews them side by side — you are buying the comparison, not the
+image — then an Image Switch picks the keeper and writes it out. Ctrl+B the settings you have
+stopped caring about; bypass passes through and costs nothing.
+
+They chain through the filesystem, which is the only way one ComfyUI workflow hands off to
+another:
+
+```
+stability/in/              sources you drop in
+stability/out/sketch/      <- 01 writes here
+stability/out/structure/   <- 02
+stability/out/style/       <- 03
+stability/out/transfer/    <- 04
+```
+
+Every graph reads **the newest image** in its `directory` (`sort_by = modified`, `descending`,
+`limit = 1`), so feeding one endpoint's output into another is a matter of pointing this
+graph's `directory` at that graph's output folder. Structure reading `stability/out/sketch` is
+a two-step chain and needs no rewiring.
+
+The filename carries through — `filenames` is wired to the save node's `label`, so
+`the-fool.png` stays `the-fool.png` at every stage and a result is always traceable to its
+source. `overwrite` is off, so a second take lands as `the-fool_1.png` rather than destroying
+the first, and "newest by modified" still picks it up. Each result gets a sidecar JSON of the
+settings that made it.
 
 ### Routing the control endpoints
 

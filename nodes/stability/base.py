@@ -12,13 +12,16 @@ from ..runtime import (
     record_call,
     request_with_retry,
     resolve_secret,
+    setting,
+    setting_int,
+    transport_advice,
 )
 from ..common import (
     NodeError,
     bytes_to_tensor,
+    encode_for_upload,
     mask_to_png_bytes,
     raise_if_interrupted,
-    tensor_to_png_bytes,
 )
 
 API_BASE = "https://api.stability.ai"
@@ -186,7 +189,8 @@ def _post(endpoint, form, api_key, stream):
             label=endpoint,
         )
     except requests.RequestException as exc:
-        raise StabilityApiError("Could not reach {}: {}".format(url, exc)) from exc
+        raise StabilityApiError(
+            "Could not reach {}: {}{}".format(url, exc, transport_advice(exc))) from exc
 
 
 def request_sync(endpoint, form, api_key):
@@ -298,10 +302,13 @@ class StabilityNode:
 
     def build_form(self, kwargs):
         form = {}
+        prefer = setting("STRANGE_PETS_UPLOAD_FORMAT", "auto").lower()
+        quality = setting_int("STRANGE_PETS_UPLOAD_QUALITY", 95)
         for name in self.IMAGE_FIELDS:
             image = kwargs.pop(name, None)
             if image is not None:
-                form[name] = ("{}.png".format(name), tensor_to_png_bytes(image), "image/png")
+                _stem, payload, mime = encode_for_upload(image, prefer, quality)
+                form[name] = ("{}.{}".format(name, mime.rsplit("/", 1)[-1]), payload, mime)
         for name in self.MASK_FIELDS:
             mask = kwargs.pop(name, None)
             if mask is not None:

@@ -277,37 +277,74 @@ def retry_after_seconds(response, fallback):
     return fallback
 
 
+def transport_advice(exc):
+    """Say what a transport failure probably is, since the raw exception does not.
+
+    These endpoints upload a whole image, so they are the first thing a flaky or
+    inspected connection breaks — and the failure looks alarming while meaning nothing
+    was generated and nothing was charged.
+    """
+    text = str(exc)
+    if "BAD_RECORD_MAC" in text or "DECRYPTION_FAILED" in text or "WRONG_VERSION" in text:
+        return (
+            "\n\nA TLS 'bad record mac' means the encrypted stream was corrupted in transit: "
+            "the request never arrived intact, so nothing was generated and nothing was "
+            "charged. It is almost always local rather than the API's doing — antivirus or a "
+            "VPN inspecting HTTPS, or an unstable link. Worth trying, roughly in order: a "
+            "different network; exempting the API host from HTTPS/SSL scanning; and sending a "
+            "smaller image, since Fit Image To Endpoint Limits can cut the upload by an order "
+            "of magnitude and the upload is what breaks."
+        )
+    if isinstance(exc, requests.Timeout):
+        return ("\n\nThe request timed out rather than being refused. Nothing was charged. "
+                "Raise STRANGE_PETS_TRANSPORT_RETRIES, or send a smaller image.")
+    if isinstance(exc, requests.ConnectionError):
+        return ("\n\nThe connection failed before a reply arrived, so nothing was generated "
+                "or charged. Check connectivity, then any proxy or firewall between you and "
+                "the API.")
+    return ""
+
+
 def request_with_retry(send, label="request", attempts=None):
     """Call `send()` (returning a Response), retrying 429s and 5xx with backoff.
 
     Stability documents its limit as 150 requests / 10 seconds; BFL does not document
     a 429 at all but can still throttle, so both packs retry defensively.
+
+    A **transport** fault — TLS, DNS, a reset connection — gets its own, larger budget.
+    It is a property of the link rather than of the request, so redialling is far more
+    likely to succeed than another attempt against a 429 is, and it costs nothing when
+    it fails because no request ever completed.
     """
-    attempts = attempts or max(1, setting_int("STRANGE_PETS_RETRIES", 3))
+    status_budget = attempts or max(1, setting_int("STRANGE_PETS_RETRIES", 3))
+    transport_budget = max(status_budget, setting_int("STRANGE_PETS_TRANSPORT_RETRIES", 5))
+    status_tries = transport_tries = 0
     delay = 1.0
-    for attempt in range(1, attempts + 1):
+
+    while True:
         try:
             response = send()
-        except requests.RequestException:
-            if attempt >= attempts:
+        except requests.RequestException as exc:
+            transport_tries += 1
+            if transport_tries >= transport_budget:
                 raise
             wait = delay + random.uniform(0, 0.4)
-            print("[strange-pets] {} connection error; retrying in {:.1f}s ({}/{})".format(
-                label, wait, attempt, attempts - 1))
+            print("[strange-pets] {} transport error ({}); retrying in {:.1f}s ({}/{})".format(
+                label, type(exc).__name__, wait, transport_tries, transport_budget - 1))
             time.sleep(wait)
             delay = min(delay * 2, 30.0)
             continue
 
-        if response.status_code not in RETRY_STATUSES or attempt >= attempts:
+        status_tries += 1
+        if response.status_code not in RETRY_STATUSES or status_tries >= status_budget:
             return response
 
         wait = retry_after_seconds(response, delay) + random.uniform(0, 0.4)
         print("[strange-pets] {} returned HTTP {}; retrying in {:.1f}s ({}/{})".format(
-            label, response.status_code, wait, attempt, attempts - 1))
+            label, response.status_code, wait, status_tries, status_budget - 1))
         response.close()
         time.sleep(wait)
         delay = min(delay * 2, 30.0)
-    return response
 
 
 # --------------------------------------------------------------------------- cache

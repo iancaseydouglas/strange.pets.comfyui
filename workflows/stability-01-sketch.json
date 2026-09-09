@@ -1,0 +1,635 @@
+{
+  "last_node_id": 12,
+  "last_link_id": 12,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        600,
+        1180
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "# 01 \u00b7 control/sketch\n\nTakes an image **read as line art** and renders a finished picture over it. It is the endpoint for the case where the drawing is right and nothing else is.\n\n## What it holds\n\nThe lines, and only the lines. Flat regions of your input carry almost nothing \u2014 this endpoint is looking for edges and treating everything between them as free space. Feed it a painted card and it will read the boundaries and discard the modelling.\n\nThat makes it the most *permissive* of the four: it will change palette, light, material and rendering completely while keeping the drawing underneath. If you want a card's composition and gesture but none of its current surface, this is the one.\n\n## The dial\n\n`control_strength` 0-1 is how tightly the result must follow those lines.\n\n- **0.3** \u2014 the lines are a suggestion. Expect the composition to move.\n- **0.6** \u2014 recognisably the same drawing, redrawn.\n- **0.9** \u2014 traced. Rigid, and it will keep line noise you would rather it dropped.\n\nAt high strength the quality of the *input* becomes the ceiling: a noisy edge map traced at 0.9 gives you a noisy result. Clean the input rather than lowering the dial.\n\n## Feeding it a photograph\n\nIf your source is a painting or a photo rather than a drawing, build the line map first: ComfyUI's **Canny** then **Invert Image** (Canny gives white-on-black; a sketch endpoint expects dark lines on light). That is what `workflows/stability-control-routing.json` wires up, and you can point this graph at its output folder instead.\n\n## Chaining these four\n\nThey all share one convention, and that is the whole mechanism \u2014 there is no workflow-calls-a-workflow in ComfyUI, so a folder is the join:\n\n```\nstability/in/              drop your sources here\nstability/out/sketch/      <- 01 writes here\nstability/out/structure/   <- 02\nstability/out/style/       <- 03\nstability/out/transfer/    <- 04\n```\n\nEvery one of these graphs reads **the newest image** in its `directory` (`sort_by = modified`, `descending`, `limit = 1`). So to feed one endpoint's output into another, change this graph's `directory` to that graph's output folder and run it. Structure reading `stability/out/sketch` is a two-step chain; nothing else needs rewiring.\n\nThe filename carries through: `Load Images From Directory` emits `filenames`, which is wired to the save node's `label`, so `the-fool.png` stays `the-fool.png` at every stage and you can always tell which source a result came from. `overwrite` is off, so a second run lands as `the-fool_1.png` rather than destroying the first \u2014 and \"newest by modified\" still picks it up.\n\nEach result gets a sidecar JSON with the prompt and settings that made it.\n\n## Cost\n\nEach of the three nodes below is **one paid call**, so a run is three. That is the point of a study graph \u2014 you are buying the comparison, not the image. **Ctrl+B** any of them to drop it from the run once you know which end of the dial you care about; bypass passes the input straight through and costs nothing.\n\nSeeds are fixed at **7**. Stability treats seed 0 as \"pick a random one\", which would make the three results incomparable and stop any of them being cached. With the seed pinned, the dial is the only thing that differs between them.\n"
+      ],
+      "title": "Read me \u2014 control/sketch",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "SPLoadImagesFromDirectory",
+      "pos": [
+        700,
+        60
+      ],
+      "size": [
+        400,
+        250
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            1,
+            2,
+            4,
+            6
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "filenames",
+          "type": "STRING",
+          "links": [
+            12
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPLoadImagesFromDirectory"
+      },
+      "widgets_values": [
+        "stability/in",
+        "*",
+        "modified",
+        true,
+        0,
+        1
+      ],
+      "title": "Newest image in the folder"
+    },
+    {
+      "id": 3,
+      "type": "PreviewImage",
+      "pos": [
+        700,
+        340
+      ],
+      "size": [
+        340,
+        320
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "What went in"
+    },
+    {
+      "id": 4,
+      "type": "StabAIControlSketch",
+      "pos": [
+        1160,
+        60
+      ],
+      "size": [
+        400,
+        440
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 2,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            3,
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlSketch"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        0.3,
+        "photographic, 3d render, watermark, text",
+        7,
+        "fixed",
+        "png",
+        "none",
+        ""
+      ],
+      "title": "control_strength = 0.3"
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "pos": [
+        1620,
+        60
+      ],
+      "size": [
+        340,
+        420
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "control_strength = 0.3"
+    },
+    {
+      "id": 6,
+      "type": "StabAIControlSketch",
+      "pos": [
+        1160,
+        540
+      ],
+      "size": [
+        400,
+        440
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            5,
+            9
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlSketch"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        0.6,
+        "photographic, 3d render, watermark, text",
+        7,
+        "fixed",
+        "png",
+        "none",
+        ""
+      ],
+      "title": "control_strength = 0.6"
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "pos": [
+        1620,
+        540
+      ],
+      "size": [
+        340,
+        420
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "control_strength = 0.6"
+    },
+    {
+      "id": 8,
+      "type": "StabAIControlSketch",
+      "pos": [
+        1160,
+        1020
+      ],
+      "size": [
+        400,
+        440
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 6,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            7,
+            10
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlSketch"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        0.9,
+        "photographic, 3d render, watermark, text",
+        7,
+        "fixed",
+        "png",
+        "none",
+        ""
+      ],
+      "title": "control_strength = 0.9"
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "pos": [
+        1620,
+        1020
+      ],
+      "size": [
+        340,
+        420
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 7,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "control_strength = 0.9"
+    },
+    {
+      "id": 10,
+      "type": "SPImageSwitch",
+      "pos": [
+        2020,
+        60
+      ],
+      "size": [
+        280,
+        200
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_1",
+          "type": "IMAGE",
+          "link": 8,
+          "shape": 7
+        },
+        {
+          "name": "image_2",
+          "type": "IMAGE",
+          "link": 9,
+          "shape": 7
+        },
+        {
+          "name": "image_3",
+          "type": "IMAGE",
+          "link": 10,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPImageSwitch"
+      },
+      "widgets_values": [
+        2
+      ],
+      "title": "Which one to keep"
+    },
+    {
+      "id": 11,
+      "type": "SPSaveImagesToDirectory",
+      "pos": [
+        2020,
+        300
+      ],
+      "size": [
+        400,
+        380
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11,
+          "shape": 7
+        },
+        {
+          "name": "label",
+          "type": "STRING",
+          "link": 12,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "paths",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSaveImagesToDirectory"
+      },
+      "widgets_values": [
+        "stability/out/sketch",
+        "{label}",
+        "",
+        "png",
+        95,
+        true,
+        false,
+        true,
+        false
+      ],
+      "title": "\u2192 stability/out/sketch"
+    },
+    {
+      "id": 12,
+      "type": "SPCostReport",
+      "pos": [
+        2020,
+        720
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "credits",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "calls",
+          "type": "INT",
+          "links": null,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPCostReport"
+      },
+      "widgets_values": [
+        false
+      ],
+      "title": "Three calls a run"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      2,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      4,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      2,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      6,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      2,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      8,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      4,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      6,
+      0,
+      10,
+      1,
+      "IMAGE"
+    ],
+    [
+      10,
+      8,
+      0,
+      10,
+      2,
+      "IMAGE"
+    ],
+    [
+      11,
+      10,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      2,
+      1,
+      11,
+      1,
+      "STRING"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "In",
+      "bounding": [
+        680,
+        -20,
+        440,
+        980
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "The dial, three ways",
+      "bounding": [
+        1140,
+        -20,
+        840,
+        1440
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Keep \u2192 disk",
+      "bounding": [
+        2000,
+        -20,
+        440,
+        960
+      ],
+      "color": "#A8A",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.4,
+      "offset": [
+        640,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

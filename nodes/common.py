@@ -45,6 +45,39 @@ def tensor_to_png_bytes(image):
     return buffer.getvalue()
 
 
+def tensor_to_jpeg_bytes(image, quality=95):
+    buffer = io.BytesIO()
+    tensor_to_pil(image).convert("RGB").save(
+        buffer, "JPEG", quality=int(quality), subsampling=0, optimize=True)
+    return buffer.getvalue()
+
+
+def encode_for_upload(image, prefer="auto", quality=95):
+    """Encode an IMAGE for a multipart upload. Returns (filename, bytes, mime type).
+
+    PNG whenever the tensor carries alpha, because several endpoints mask by the image's
+    alpha channel and flattening it would silently change what they do.
+
+    Otherwise `auto` encodes both and sends the smaller, because which format wins depends
+    entirely on the picture and guessing is worse than measuring. Flat colour and linework —
+    a tarot card — compress several times better as PNG; a photographic frame goes several
+    times smaller as JPEG. The upload is the fragile half of one of these calls, so the
+    cost of encoding twice is trivial against sending the wrong one. The shipped OpenAPI
+    description lists jpeg, png and webp for every image field.
+    """
+    array = image[0] if image.dim() == 4 else image
+    if array.shape[-1] == 4 or prefer == "png":
+        return ("upload.png", tensor_to_png_bytes(image), "image/png")
+
+    jpeg = tensor_to_jpeg_bytes(image, quality)
+    if prefer == "jpeg":
+        return ("upload.jpg", jpeg, "image/jpeg")
+    png = tensor_to_png_bytes(image)
+    if len(png) <= len(jpeg):
+        return ("upload.png", png, "image/png")
+    return ("upload.jpg", jpeg, "image/jpeg")
+
+
 def mask_to_png_bytes(mask):
     """Encode a ComfyUI MASK (B,H,W in 0..1) as an 8-bit greyscale PNG.
 

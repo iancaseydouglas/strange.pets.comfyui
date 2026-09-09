@@ -95,6 +95,7 @@ def builtin_definition(tradition):
         "courts": list(COURT_NAMES[tradition]),
         "major_element": "Spirit",
         "renames": {},
+        "aliases": {},
     }
 
 
@@ -124,9 +125,14 @@ def validate_definition(data, where="definition"):
         # Minors are generated from suit x rank, so a one-off minor title has nowhere else
         # to live. Keyed by code (wands-14) or by slug.
         "renames": data.get("renames") or {},
+        # code -> the slug the card had before it was renamed. Without this a definition
+        # saved after a rename forgets the card ever had another name, and every selector
+        # or colour rule written against the old one starts failing.
+        "aliases": data.get("aliases") or {},
     }
-    if not isinstance(definition["renames"], dict):
-        raise NodeError("{}: 'renames' must be an object of card -> title.".format(where))
+    for key in ("renames", "aliases"):
+        if not isinstance(definition[key], dict):
+            raise NodeError("{}: {!r} must be an object keyed by card.".format(where, key))
     for key in ("majors", "pips", "courts"):
         if not isinstance(definition[key], list) or not all(
                 isinstance(item, str) for item in definition[key]):
@@ -278,8 +284,10 @@ def build_deck(definition, numerals, suit_override="", court_override=""):
         if card is None:
             raise NodeError("Definition renames {!r}, which is not a card in this deck.".format(target))
         card["title"] = str(title)
+    aliases = definition.get("aliases") or {}
     for card in cards:
-        card["slug"] = card["base_slug"] = slugify(card["title"])
+        card["slug"] = slugify(card["title"])
+        card["base_slug"] = slugify(aliases.get(card["code"]) or card["slug"])
     return cards
 
 
@@ -807,6 +815,12 @@ class TarotDeck:
             card["code"]: card["title"] for card in cards
             if card["arcana"] == "minor"
             and card["title"] != generated(card["rank"], card["suit"])
+        }
+        # Carry each renamed card's original slug forward, so a rule written against the
+        # name it used to have keeps resolving in whatever graph loads this file next.
+        resolved["aliases"] = {
+            card["code"]: card["base_slug"] for card in cards
+            if card["base_slug"] != card["slug"]
         }
         if save_definition_to.strip():
             target = resolve_path(save_definition_to, "input")
