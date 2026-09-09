@@ -1,0 +1,471 @@
+{
+  "last_node_id": 9,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -580,
+        40
+      ],
+      "size": [
+        520,
+        900
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Structure held, fidelity on a dial\n\nThree different dials, one card. Run them side by side and learn what each one costs you.\n\n### 1. FLUX.2 \u2014 Canny edges as a reference image\n\n**There is no ControlNet in the FLUX.2 API.** The spec exposes only the generation endpoints and none of them take a control map or a control strength. So the map is built locally and handed over as an ordinary reference image, with the prompt saying what it is for.\n\nTwo knobs, and they do different jobs:\n\n- **Canny `low_threshold`** decides how much structure even exists. Raise it and weak edges vanish; the model is then free where the map is silent. This is the coarse control.\n- **`guidance` (flex only, 1.5\u201310)** decides how hard the model tries to satisfy the prompt, and by extension the edge map you described in it. 3 wanders, 8 clamps down and starts looking stiff.\n\nThe sweep node runs `guidance` 2 \u2192 8 in steps of 1.5 against a **fixed seed**, so the only thing changing between tiles is the dial. The contact sheet prints the value under each one.\n\n### 2. Stability Control Structure \u2014 a real strength parameter\n\n`control_strength` 0\u20131 is the honest version of this: no edge map, no prompt phrasing, just how closely to follow the reference. 0.9 traces, 0.4 suggests. Start at 0.7.\n\n### Which to use\nCanny throws away everything but edges, which is what you want when the base card's colour is wrong but the drawing is right. Control Structure keeps mass and tone as well, which is what you want when the card is nearly there.\n\n### Cost\nThe sweep is 5 calls. The `guidance` sweep needs `model = flux-2-flex`; pro and max have no such parameter and the node will say so rather than silently ignore it."
+      ],
+      "title": "Read me \u2014 structure and fidelity",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        340,
+        340
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1,
+            7
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "The card whose structure to keep"
+    },
+    {
+      "id": 3,
+      "type": "Canny",
+      "pos": [
+        420,
+        60
+      ],
+      "size": [
+        300,
+        120
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2,
+            3
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Canny"
+      },
+      "widgets_values": [
+        0.2,
+        0.6
+      ],
+      "title": "Structure map"
+    },
+    {
+      "id": 4,
+      "type": "PreviewImage",
+      "pos": [
+        420,
+        220
+      ],
+      "size": [
+        300,
+        300
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Check the map first"
+    },
+    {
+      "id": 5,
+      "type": "BFLFlux2BatchVariations",
+      "pos": [
+        770,
+        60
+      ],
+      "size": [
+        430,
+        620
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 3,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "links": [
+            5
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2BatchVariations"
+      },
+      "widgets_values": [
+        "flux-2-flex",
+        "",
+        "tarot/fidelity-sweep",
+        "The reference image is a Canny edge map of a tarot card. Treat every white line as the exact structural blueprint: figure placement, proportion and perspective must follow it. Do not draw the lines themselves.\n\nRender onto that structure: a tarot card illustration, gold ink on deep indigo, engraved linework, candlelit, no border, no lettering.",
+        "guidance",
+        "2..8:1.5",
+        4,
+        1,
+        88121,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        false,
+        false,
+        40,
+        5.0,
+        ""
+      ],
+      "title": "Sweep guidance 2 \u2192 8"
+    },
+    {
+      "id": 6,
+      "type": "SPContactSheet",
+      "pos": [
+        1250,
+        60
+      ],
+      "size": [
+        340,
+        220
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "link": 5,
+          "widget": {
+            "name": "labels"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sheet",
+          "type": "IMAGE",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPContactSheet"
+      },
+      "widgets_values": [
+        5,
+        512,
+        10,
+        30,
+        "#141018",
+        ""
+      ],
+      "title": "One image to judge from"
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "pos": [
+        1250,
+        320
+      ],
+      "size": [
+        420,
+        360
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 6,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "The guidance ladder"
+    },
+    {
+      "id": 8,
+      "type": "StabAIControlStructure",
+      "pos": [
+        770,
+        740
+      ],
+      "size": [
+        430,
+        400
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 7,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlStructure"
+      },
+      "widgets_values": [
+        "A tarot card illustration, gold ink on deep indigo, engraved linework, candlelit, no border, no lettering.",
+        0.7,
+        "",
+        88121,
+        "fixed",
+        "png",
+        "none",
+        ""
+      ],
+      "title": "Stability Control Structure \u2014 control_strength is the dial"
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "pos": [
+        1250,
+        740
+      ],
+      "size": [
+        340,
+        360
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Structure result"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      3,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      5,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      5,
+      1,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      6,
+      6,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      2,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      8,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Canny \u2192 FLUX.2, swept",
+      "bounding": [
+        400,
+        -20,
+        1290,
+        720
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Stability control_strength",
+      "bounding": [
+        750,
+        700,
+        940,
+        440
+      ],
+      "color": "#88A",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [
+        640,
+        20
+      ]
+    }
+  },
+  "version": 0.4
+}

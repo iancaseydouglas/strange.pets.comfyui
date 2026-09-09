@@ -1,0 +1,442 @@
+{
+  "last_node_id": 8,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -560,
+        40
+      ],
+      "size": [
+        500,
+        780
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Style onto a set of cards, structure held\n\nEach card keeps its own composition; one reference image lends the look to all of them.\n\n**Top lane \u2014 FLUX.2 [pro].** *Load Images From Directory* emits a **list**, so the [pro] node fires once per card. The card goes into `input_image` (the thing being redrawn) and the style reference into `input_image_2`. Slot order is the whole instruction here: the prompt names which is which, so say it explicitly and keep it consistent.\n\n`disable_pup` is **on**. Prompt upsampling rewrites your wording, and a style prompt you have tuned over several runs is exactly the thing you do not want rewritten.\n\nThe `filenames` output is wired to the save node's `label`, so `the-tower.png` comes back as `styled_the-tower.png` rather than `styled_0007.png`. That is what makes a run reversible \u2014 you can always tell which card a result came from.\n\n**Bottom lane \u2014 Stability Style Transfer.** The same two images with explicit dials instead of a prompt:\n\n- `style_strength` \u2014 how much of the reference's look lands.\n- `composition_fidelity` \u2014 how hard the original composition is held. This is the one to raise when a card's structure starts drifting.\n- `change_strength` \u2014 how far from the init image it may travel at all.\n\nRun both on one card first and compare. They fail differently: FLUX.2 tends to reinterpret, Stability tends to recolour.\n\n### Cost\nOne API call per card, per lane. Point `directory` at three cards before pointing it at seventy-eight."
+      ],
+      "title": "Read me \u2014 style transfer",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "SPLoadImagesFromDirectory",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        380,
+        230
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            1,
+            6
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "filenames",
+          "type": "STRING",
+          "links": [
+            5
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPLoadImagesFromDirectory"
+      },
+      "widgets_values": [
+        "tarot/base",
+        "*.png",
+        "name",
+        false,
+        0,
+        0
+      ],
+      "title": "The cards to restyle"
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        340
+      ],
+      "size": [
+        340,
+        340
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2,
+            7
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Style reference"
+    },
+    {
+      "id": 4,
+      "type": "BFLFlux2Pro",
+      "pos": [
+        480,
+        60
+      ],
+      "size": [
+        440,
+        460
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 1,
+          "shape": 7
+        },
+        {
+          "name": "input_image_2",
+          "type": "IMAGE",
+          "link": 2,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            3,
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Pro"
+      },
+      "widgets_values": [
+        "Redraw image 1 in the visual style of image 2.\n\nImage 1 is the source card: hold its composition, subject placement, figure poses, gesture and symbolic content exactly as they are.\nImage 2 is a style reference only: take its palette, line quality, texture, and lighting from it and nothing else \u2014 none of its subject matter.\n\nOutput a single tarot card illustration, full bleed, no border and no lettering.",
+        true,
+        1717,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        ""
+      ],
+      "title": "FLUX.2 [pro] \u2014 restyle each card"
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "pos": [
+        980,
+        60
+      ],
+      "size": [
+        340,
+        380
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Watch them come through"
+    },
+    {
+      "id": 6,
+      "type": "SPSaveImagesToDirectory",
+      "pos": [
+        980,
+        480
+      ],
+      "size": [
+        400,
+        330
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "label",
+          "type": "STRING",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "paths",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSaveImagesToDirectory"
+      },
+      "widgets_values": [
+        "tarot/styled",
+        "{label}",
+        "",
+        "png",
+        95,
+        true,
+        false,
+        true,
+        false
+      ],
+      "title": "Save under each card's own name"
+    },
+    {
+      "id": 7,
+      "type": "StabAIControlStyleTransfer",
+      "pos": [
+        480,
+        580
+      ],
+      "size": [
+        440,
+        400
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "init_image",
+          "type": "IMAGE",
+          "link": 6,
+          "shape": 7
+        },
+        {
+          "name": "style_image",
+          "type": "IMAGE",
+          "link": 7,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StabAIControlStyleTransfer"
+      },
+      "widgets_values": [
+        "",
+        "",
+        1.0,
+        0.9,
+        0.75,
+        1717,
+        "fixed",
+        "png",
+        ""
+      ],
+      "title": "Stability Style Transfer \u2014 explicit dials"
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "pos": [
+        980,
+        860
+      ],
+      "size": [
+        340,
+        380
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Stability result"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      1,
+      "IMAGE"
+    ],
+    [
+      3,
+      4,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      4,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      2,
+      1,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      6,
+      2,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      3,
+      0,
+      7,
+      1,
+      "IMAGE"
+    ],
+    [
+      8,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "FLUX.2 route",
+      "bounding": [
+        460,
+        -20,
+        900,
+        560
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Stability route",
+      "bounding": [
+        460,
+        540,
+        900,
+        720
+      ],
+      "color": "#88A",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        620,
+        20
+      ]
+    }
+  },
+  "version": 0.4
+}

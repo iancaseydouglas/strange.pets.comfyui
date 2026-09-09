@@ -49,6 +49,12 @@
             1
           ],
           "slot_index": 0
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
         }
       ],
       "properties": {

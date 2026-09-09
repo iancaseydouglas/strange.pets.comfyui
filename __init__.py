@@ -2,6 +2,10 @@ from .nodes.batch import Flux2BatchVariations, Flux2LoadImageFromPath
 from .nodes.flux2 import Flux2Flex, Flux2Klein4B, Flux2Klein9B, Flux2Max, Flux2Pro
 from .nodes.stability import NODE_CLASS_MAPPINGS as STABILITY_CLASSES
 from .nodes.stability import NODE_DISPLAY_NAME_MAPPINGS as STABILITY_NAMES
+from .nodes.tarot import NODE_CLASS_MAPPINGS as TAROT_CLASSES
+from .nodes.tarot import NODE_DISPLAY_NAME_MAPPINGS as TAROT_NAMES
+from .nodes.tarot_style import NODE_CLASS_MAPPINGS as STYLE_CLASSES
+from .nodes.tarot_style import NODE_DISPLAY_NAME_MAPPINGS as STYLE_NAMES
 from .nodes.utils import NODE_CLASS_MAPPINGS as UTIL_CLASSES
 from .nodes.utils import NODE_DISPLAY_NAME_MAPPINGS as UTIL_NAMES
 
@@ -29,6 +33,10 @@ NODE_CLASS_MAPPINGS.update(STABILITY_CLASSES)
 NODE_DISPLAY_NAME_MAPPINGS.update(STABILITY_NAMES)
 NODE_CLASS_MAPPINGS.update(UTIL_CLASSES)
 NODE_DISPLAY_NAME_MAPPINGS.update(UTIL_NAMES)
+NODE_CLASS_MAPPINGS.update(TAROT_CLASSES)
+NODE_DISPLAY_NAME_MAPPINGS.update(TAROT_NAMES)
+NODE_CLASS_MAPPINGS.update(STYLE_CLASSES)
+NODE_DISPLAY_NAME_MAPPINGS.update(STYLE_NAMES)
 
 WEB_DIRECTORY = "./web/js"
 

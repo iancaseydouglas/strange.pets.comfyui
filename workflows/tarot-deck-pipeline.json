@@ -1,0 +1,971 @@
+{
+  "last_node_id": 14,
+  "last_link_id": 17,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -720,
+        40
+      ],
+      "size": [
+        620,
+        1560
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "# The deck pipeline\n\nBase art in, a finished deck out. Every position in the deck is a slot; the pipeline runs once per slot and nothing downstream needs to know which card it is holding.\n\n**Deck Manifest \u2192 Slot Loader \u2192 Prompt Builder \u2192 generate \u2192 Frame \u2192 Lettering \u2192 Save**\n\n## Read this before spending anything\n\n`scope` on the manifest starts at **major arcana (22)**. Set it to `full deck (78)` only once a run has come out the way you want, because that is 78 API calls. There is no partial billing.\n\n## 1 \u00b7 Deck Manifest \u2014 the shape of the deck\n\n78 slots in order, each carrying its own title, numeral, suit, rank and element. `tradition` sets the names: `rws`, `marseille` or `thoth` (both of the latter seat Justice at VIII and Strength at XI). For a deck of your own, `suit_names` and `court_names` take four comma-separated names each, and `custom_titles` takes one title per line in deck order \u2014 so *Tarot of the Hidden Light* can carry its own vocabulary while every other node still knows what position it is on.\n\n## 2 \u00b7 Slot Loader \u2014 where your art meets the slots\n\nPoint `directory` at your base images. Filenames are matched by name, not by order, so all of these land on the right slot:\n\n`the-fool.png` \u00b7 `03-empress.png` \u00b7 `HighPriestess_final.png` \u00b7 `XVI_the_tower.png` \u00b7 `wands_07.png` \u00b7 `SevenOfCups_v2.png` \u00b7 `queen-of-swords.png`\n\nThen read the **report** output. It names every file it matched and to what, every file it could not place, and every slot still empty. Read it before you queue anything \u2014 a misfiled card is much cheaper to catch here.\n\n`on_missing` = **blank slot** is deliberate for a deck in progress: an unfilled position stays in the run holding a labelled placeholder, so the contact sheet at the end shows the whole deck with its gaps rather than a shorter deck that hides them. Switch to `skip` to spend nothing on the gaps, or `error` to refuse to run until the deck is complete.\n\n`overrides` is the escape hatch \u2014 one `slug = filename` per line for anything the matcher gets wrong.\n\n## 3 \u00b7 Prompt Builder \u2014 the same instruction, per card\n\n`{title}` `{numeral}` `{arcana}` `{suit}` `{rank}` `{element}` `{slug}` `{index}` `{style}`\n\n`style` is the one block you retune between whole-deck runs. The template is the sentence that stays fixed. Keeping them apart is the point: change `style` and every card changes together, consistently.\n\n## 4 \u00b7 Generate \u2014 art in, art out\n\nEach card's own image goes into `input_image` and the style reference into `input_image_2`; the prompt names which is which. `disable_pup` is on so your prompt is used as written.\n\n**Fix the seed.** A fixed seed makes the whole run reproducible *and* cacheable \u2014 if you then only change the frame or the lettering, re-queuing costs nothing at all, because every generate call comes back from the cache. This is what makes the border and title stages free to iterate on. Set the seed to -1 only when you want a genuinely different draw.\n\n## 5 \u00b7 Frame \u2014 the card as an object\n\nTrim size at a real DPI, plus bleed. `tarot 2.75x4.75in` is the standard 70\u00d7120mm stock; set `bleed_mm` to 3 if a printer asked for it, 0 for screen.\n\n`margin_pct` is the border band, as a percentage of card width. `top_margin_extra_pct` and `bottom_margin_extra_pct` open up the head and foot for the numeral and the title \u2014 the art box shrinks to make room, so the lettering never sits on the illustration.\n\n`border_style`: `none`, `keyline`, `solid band`, `double rule`, `inset panel`. Or leave it `none` and put a border you designed elsewhere into `overlay_path` \u2014 any PNG with alpha, laid over the finished card at card size.\n\n## 6 \u00b7 Lettering \u2014 the name and the numeral\n\n`title` and `numeral` come in from the loader, so each card is lettered with its own and the numerals stay aligned even when slots were skipped.\n\n**Set `font_path`.** Blank falls back to Pillow's built-in face, which is fine for placing the block and not fine for print. Point it at a .ttf or .otf.\n\n`tracking_px` is real letter-spacing \u2014 display lettering wants some, and Pillow has no such parameter, so the text is laid out a glyph at a time to provide it. Sizes are percentages of card height, so they hold when you change the trim size.\n\n## 7 \u00b7 Save \u2014 under the card's own name\n\n`{index:02d}_{label}` with the slugs wired to `label` gives `00_the-fool.png`, `01_the-magician.png` \u2026 in deck order, which is what a print house wants and what you will want in six months.\n\n`save_sidecar_json` is on: prompt, model, seed and size land beside each card as JSON, so any card can be traced back to what made it.\n\n## 8 \u00b7 Contact sheet \u2014 the whole deck at once\n\nThe sheet node sees the entire set rather than one card at a time, so this is where you judge whether a *deck* holds together \u2014 which is a different question from whether a card is good."
+      ],
+      "title": "Read me \u2014 the deck pipeline",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "SPTarotDeck",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        400,
+        340
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "titles",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "slugs",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 2
+        },
+        {
+          "name": "numerals",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 3
+        },
+        {
+          "name": "indices",
+          "type": "INT",
+          "links": null,
+          "slot_index": 4
+        },
+        {
+          "name": "count",
+          "type": "INT",
+          "links": null,
+          "slot_index": 5
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 6
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotDeck"
+      },
+      "widgets_values": [
+        "rws",
+        "",
+        "major arcana",
+        "index=0, index=16, index=18, courts suit1, pips 7, suit2 13",
+        "roman",
+        "as written",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "title": "1 \u00b7 The shape of the deck"
+    },
+    {
+      "id": 3,
+      "type": "SPTarotDeckLoad",
+      "pos": [
+        500,
+        60
+      ],
+      "size": [
+        420,
+        400
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            2,
+            5
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "titles",
+          "type": "STRING",
+          "links": [
+            9,
+            16
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "numerals",
+          "type": "STRING",
+          "links": [
+            10
+          ],
+          "slot_index": 2
+        },
+        {
+          "name": "slugs",
+          "type": "STRING",
+          "links": [
+            12
+          ],
+          "slot_index": 3
+        },
+        {
+          "name": "indices",
+          "type": "INT",
+          "links": [
+            13
+          ],
+          "slot_index": 4
+        },
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "links": [
+            3
+          ],
+          "slot_index": 5
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 6
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotDeckLoad"
+      },
+      "widgets_values": [
+        "tarot/base",
+        "*.png",
+        "auto",
+        "blank slot",
+        1024,
+        1792,
+        ""
+      ],
+      "title": "2 \u00b7 Your art onto the slots"
+    },
+    {
+      "id": 4,
+      "type": "PreviewImage",
+      "pos": [
+        500,
+        500
+      ],
+      "size": [
+        320,
+        300
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Base art as loaded \u2014 the match report prints to the console"
+    },
+    {
+      "id": 5,
+      "type": "SPTarotPrompt",
+      "pos": [
+        980,
+        60
+      ],
+      "size": [
+        420,
+        400
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "link": 3,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompts",
+          "type": "STRING",
+          "links": [
+            4,
+            14
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "preview",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotPrompt"
+      },
+      "widgets_values": [
+        "Tarot card '{title}' ({numeral}), {arcana} arcana. {style}",
+        "Gold ink on deep indigo, engraved linework, candlelit, symbolist, hand-inked texture. Full bleed illustration, no border and no lettering."
+      ],
+      "title": "3 \u00b7 One prompt per card"
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [
+        980,
+        500
+      ],
+      "size": [
+        340,
+        340
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Style reference for the whole deck"
+    },
+    {
+      "id": 7,
+      "type": "BFLFlux2Pro",
+      "pos": [
+        1460,
+        60
+      ],
+      "size": [
+        440,
+        460
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 5,
+          "shape": 7
+        },
+        {
+          "name": "input_image_2",
+          "type": "IMAGE",
+          "link": 6,
+          "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 4,
+          "widget": {
+            "name": "prompt"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            7
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Pro"
+      },
+      "widgets_values": [
+        "",
+        true,
+        31337,
+        "fixed",
+        1024,
+        1792,
+        2,
+        "png",
+        ""
+      ],
+      "title": "4 \u00b7 Generate each card"
+    },
+    {
+      "id": 8,
+      "type": "SPTarotCardFrame",
+      "pos": [
+        1960,
+        60
+      ],
+      "size": [
+        420,
+        700
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 7,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "card",
+          "type": "IMAGE",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null,
+          "slot_index": 2
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotCardFrame"
+      },
+      "widgets_values": [
+        "tarot 2.75x4.75in",
+        300,
+        0,
+        0,
+        3.0,
+        "cover",
+        true,
+        7.0,
+        5.0,
+        8.0,
+        "#0d0b14",
+        "double rule",
+        "#c8a94b",
+        6,
+        "#8a6f2c",
+        2,
+        16,
+        8,
+        0,
+        ""
+      ],
+      "title": "5 \u00b7 Card, border, bleed"
+    },
+    {
+      "id": 9,
+      "type": "SPTarotCardTitle",
+      "pos": [
+        2440,
+        60
+      ],
+      "size": [
+        420,
+        700
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 8,
+          "shape": 7
+        },
+        {
+          "name": "title",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "title"
+          }
+        },
+        {
+          "name": "numeral",
+          "type": "STRING",
+          "link": 10,
+          "widget": {
+            "name": "numeral"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "card",
+          "type": "IMAGE",
+          "links": [
+            11,
+            15
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotCardTitle"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "",
+        "bottom",
+        "top",
+        3.4,
+        3.4,
+        "#e8dcc0",
+        10,
+        "UPPERCASE",
+        4.0,
+        10,
+        0,
+        "#000000",
+        "above title",
+        2,
+        40.0,
+        14
+      ],
+      "title": "6 \u00b7 Name and numeral"
+    },
+    {
+      "id": 10,
+      "type": "SPSaveImagesToDirectory",
+      "pos": [
+        2920,
+        60
+      ],
+      "size": [
+        420,
+        360
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11,
+          "shape": 7
+        },
+        {
+          "name": "prompt_text",
+          "type": "STRING",
+          "link": 14,
+          "shape": 7
+        },
+        {
+          "name": "label",
+          "type": "STRING",
+          "link": 12,
+          "shape": 7
+        },
+        {
+          "name": "index",
+          "type": "INT",
+          "link": 13,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "paths",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSaveImagesToDirectory"
+      },
+      "widgets_values": [
+        "tarot/deck-out",
+        "{index:02d}_{label}",
+        "",
+        "png",
+        95,
+        true,
+        false,
+        true,
+        false
+      ],
+      "title": "7 \u00b7 00_the-fool.png, in deck order"
+    },
+    {
+      "id": 11,
+      "type": "SPContactSheet",
+      "pos": [
+        2920,
+        460
+      ],
+      "size": [
+        400,
+        230
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 15,
+          "shape": 7
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "link": 16,
+          "widget": {
+            "name": "labels"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sheet",
+          "type": "IMAGE",
+          "links": [
+            17
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPContactSheet"
+      },
+      "widgets_values": [
+        6,
+        384,
+        12,
+        32,
+        "#0b0910",
+        ""
+      ],
+      "title": "8 \u00b7 The whole deck at once"
+    },
+    {
+      "id": 12,
+      "type": "PreviewImage",
+      "pos": [
+        2920,
+        740
+      ],
+      "size": [
+        400,
+        480
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 17,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Does the deck hold together?"
+    },
+    {
+      "id": 13,
+      "type": "SPCostReport",
+      "pos": [
+        40,
+        640
+      ],
+      "size": [
+        400,
+        220
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "credits",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "calls",
+          "type": "INT",
+          "links": null,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPCostReport"
+      },
+      "widgets_values": [
+        false
+      ],
+      "title": "What the run cost"
+    },
+    {
+      "id": 14,
+      "type": "SPKeyStatus",
+      "pos": [
+        40,
+        900
+      ],
+      "size": [
+        400,
+        220
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPKeyStatus"
+      },
+      "widgets_values": [
+        "all"
+      ],
+      "title": "Keys before you start"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "TAROT_DECK"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      3,
+      5,
+      5,
+      0,
+      "TAROT_DECK"
+    ],
+    [
+      4,
+      5,
+      0,
+      7,
+      2,
+      "STRING"
+    ],
+    [
+      5,
+      3,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      6,
+      0,
+      7,
+      1,
+      "IMAGE"
+    ],
+    [
+      7,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      8,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      3,
+      1,
+      9,
+      1,
+      "STRING"
+    ],
+    [
+      10,
+      3,
+      2,
+      9,
+      2,
+      "STRING"
+    ],
+    [
+      11,
+      9,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      3,
+      3,
+      10,
+      2,
+      "STRING"
+    ],
+    [
+      13,
+      3,
+      4,
+      10,
+      3,
+      "INT"
+    ],
+    [
+      14,
+      5,
+      0,
+      10,
+      1,
+      "STRING"
+    ],
+    [
+      15,
+      9,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      3,
+      1,
+      11,
+      1,
+      "STRING"
+    ],
+    [
+      17,
+      11,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Deck definition",
+      "bounding": [
+        20,
+        -20,
+        900,
+        500
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Per-card prompt",
+      "bounding": [
+        960,
+        -20,
+        460,
+        500
+      ],
+      "color": "#88A",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Generate",
+      "bounding": [
+        1440,
+        -20,
+        460,
+        560
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Card assembly",
+      "bounding": [
+        1940,
+        -20,
+        920,
+        800
+      ],
+      "color": "#A88",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Output",
+      "bounding": [
+        2900,
+        -20,
+        440,
+        1280
+      ],
+      "color": "#A8A",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.35,
+      "offset": [
+        780,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

@@ -1,0 +1,539 @@
+{
+  "last_node_id": 10,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -580,
+        40
+      ],
+      "size": [
+        520,
+        860
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Load one card, sweep it\n\nTwo sweeps off the same image, so you can see a parameter's shape instead of guessing at it.\n\n### The distinction that matters\n\n- **`seed` = -1, `sweep_param` = none, `variations` = 8** \u2014 eight different images. This is *variation*: you are sampling the space.\n- **`seed` fixed, `sweep_param` = guidance** \u2014 one image per value with everything else nailed down. This is *a sweep*: you are measuring one axis.\n\nMixing them tells you nothing, because you cannot tell which change caused what. The top lane sweeps `guidance` on a fixed seed. The bottom lane sweeps `steps` on the *same* fixed seed, so the two ladders are directly comparable.\n\n`variations` multiplies on top of a sweep: 5 values \u00d7 2 variations = 10 calls.\n\n### sweep_spec\n- explicit list \u2014 `3,5,7,9`\n- inclusive range \u2014 `1.5..8`\n- range with step \u2014 `2..8:1.5`\n\n`steps` and `guidance` exist only on **flux-2-flex**. `seed`, `width`, `height` and `safety_tolerance` sweep on any model.\n\n### Reading the results\nEach contact sheet prints the swept value under its tile. `output_dir` also writes every frame to disk with the value and seed in the filename, plus a `manifest.txt` \u2014 so a sheet you like six weeks from now is still traceable to its settings.\n\n### Cost and speed\n`parallel` keeps that many calls in flight. The calls are network-bound, so 4 lanes is roughly 4\u00d7 faster in wall-clock and costs exactly the same. The node refuses any run over 100 calls.\n\nThe **Cost / Call Report** at the right totals what the session actually spent, and says how many results came from cache rather than the API \u2014 a re-run with the same fixed seed is free."
+      ],
+      "title": "Read me \u2014 variations and sweeps",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "BFLFlux2LoadImageFromPath",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        400,
+        100
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1,
+            5
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2LoadImageFromPath"
+      },
+      "widgets_values": [
+        "tarot/base/the-moon.png"
+      ],
+      "title": "Any path on disk \u2014 no need to copy into input/"
+    },
+    {
+      "id": 3,
+      "type": "BFLFlux2BatchVariations",
+      "pos": [
+        490,
+        60
+      ],
+      "size": [
+        430,
+        620
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "links": [
+            3
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2BatchVariations"
+      },
+      "widgets_values": [
+        "flux-2-flex",
+        "",
+        "tarot/sweeps/guidance",
+        "A variation of this tarot card. Keep the subject, composition and symbolic content; vary the linework, texture and the quality of the light.",
+        "guidance",
+        "2..8:1.5",
+        4,
+        1,
+        4242,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        false,
+        false,
+        40,
+        5.0,
+        ""
+      ],
+      "title": "Sweep A \u2014 guidance"
+    },
+    {
+      "id": 4,
+      "type": "SPContactSheet",
+      "pos": [
+        970,
+        60
+      ],
+      "size": [
+        320,
+        220
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2,
+          "shape": 7
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "link": 3,
+          "widget": {
+            "name": "labels"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sheet",
+          "type": "IMAGE",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPContactSheet"
+      },
+      "widgets_values": [
+        5,
+        448,
+        10,
+        30,
+        "#141018",
+        ""
+      ],
+      "title": "guidance ladder"
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "pos": [
+        970,
+        320
+      ],
+      "size": [
+        400,
+        340
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Sweep A"
+    },
+    {
+      "id": 6,
+      "type": "BFLFlux2BatchVariations",
+      "pos": [
+        490,
+        720
+      ],
+      "size": [
+        430,
+        620
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "links": [
+            7
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2BatchVariations"
+      },
+      "widgets_values": [
+        "flux-2-flex",
+        "",
+        "tarot/sweeps/steps",
+        "A variation of this tarot card. Keep the subject, composition and symbolic content; vary the linework, texture and the quality of the light.",
+        "steps",
+        "10,20,30,40,50",
+        4,
+        1,
+        4242,
+        "fixed",
+        0,
+        0,
+        2,
+        "png",
+        false,
+        false,
+        40,
+        5.0,
+        ""
+      ],
+      "title": "Sweep B \u2014 steps, same seed"
+    },
+    {
+      "id": 7,
+      "type": "SPContactSheet",
+      "pos": [
+        970,
+        720
+      ],
+      "size": [
+        320,
+        220
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 6,
+          "shape": 7
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "link": 7,
+          "widget": {
+            "name": "labels"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sheet",
+          "type": "IMAGE",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPContactSheet"
+      },
+      "widgets_values": [
+        5,
+        448,
+        10,
+        30,
+        "#141018",
+        ""
+      ],
+      "title": "steps ladder"
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "pos": [
+        970,
+        980
+      ],
+      "size": [
+        400,
+        340
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Sweep B"
+    },
+    {
+      "id": 9,
+      "type": "SPCostReport",
+      "pos": [
+        1420,
+        60
+      ],
+      "size": [
+        360,
+        200
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "credits",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "calls",
+          "type": "INT",
+          "links": null,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPCostReport"
+      },
+      "widgets_values": [
+        false
+      ],
+      "title": "What this run cost"
+    },
+    {
+      "id": 10,
+      "type": "SPCacheTools",
+      "pos": [
+        1420,
+        300
+      ],
+      "size": [
+        360,
+        180
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPCacheTools"
+      },
+      "widgets_values": [
+        "show stats"
+      ],
+      "title": "Re-runs come from here"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      3,
+      1,
+      4,
+      1,
+      "STRING"
+    ],
+    [
+      4,
+      4,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      2,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      6,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      6,
+      1,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      8,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Sweep A \u2014 guidance",
+      "bounding": [
+        470,
+        -20,
+        930,
+        720
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Sweep B \u2014 steps",
+      "bounding": [
+        470,
+        640,
+        930,
+        720
+      ],
+      "color": "#88A",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [
+        640,
+        20
+      ]
+    }
+  },
+  "version": 0.4
+}

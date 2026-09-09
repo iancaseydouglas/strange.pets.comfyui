@@ -109,9 +109,9 @@ class Flux2LoadImageFromPath:
 
 class Flux2BatchVariations:
     CATEGORY = "strange-pets/BFL/FLUX.2"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("images",)
-    OUTPUT_IS_LIST = (True,)
+    RETURN_TYPES = ("IMAGE", "STRING")
+    RETURN_NAMES = ("images", "labels")
+    OUTPUT_IS_LIST = (True, True)
     FUNCTION = "execute"
     DESCRIPTION = (
         "Batch-generate variations of a local image (or a whole folder of them), optionally sweeping "
@@ -300,13 +300,24 @@ class Flux2BatchVariations:
                     if sweep_param != "none":
                         parts.append("{}-{}".format(sweep_param, value))
                     parts.append("seed{}".format(payload["seed"]))
-                    jobs.append(("_".join(str(part) for part in parts), payload))
+
+                    # The filename stem carries everything; the label is the short caption
+                    # a contact sheet prints under each tile, so it names only what varied.
+                    caption = []
+                    if len(bases) > 1:
+                        caption.append(base_name)
+                    if sweep_param != "none":
+                        caption.append("{} {}".format(sweep_param, value))
+                    if sweep_param != "seed":
+                        caption.append("seed {}".format(payload["seed"]))
+                    jobs.append(("_".join(str(part) for part in parts), payload,
+                                 "  ".join(caption)))
 
         lanes = max(1, min(int(parallel), len(jobs)))
         print("[strange-pets] batch of {} on {}, {} at a time".format(total, endpoint, lanes))
 
         def run_job(job):
-            stem, payload = job
+            _stem, payload, _label = job
             return generate(endpoint, payload, api_key)
 
         if lanes == 1:
@@ -328,9 +339,10 @@ class Flux2BatchVariations:
                     if bar is not None:
                         bar.update(1)
 
-        results, manifest = [], []
-        for index, (image, (stem, _payload)) in enumerate(zip(images, jobs)):
+        results, labels, manifest = [], [], []
+        for index, (image, (stem, _payload, label)) in enumerate(zip(images, jobs)):
             results.append(image)
+            labels.append(label)
             if out_dir:
                 manifest.append(save_tensor_to_dir(
                     image, out_dir, "{}_{:03d}".format(stem, index), output_format))
@@ -339,4 +351,4 @@ class Flux2BatchVariations:
             with open(os.path.join(out_dir, "manifest.txt"), "w") as handle:
                 handle.write("\n".join(manifest) + "\n")
 
-        return (results,)
+        return (results, labels)

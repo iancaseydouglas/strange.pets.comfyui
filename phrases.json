@@ -1,0 +1,38 @@
+{
+  "_comment": "Prompt language for each fidelity axis, by band. A hold of 1.0 means keep the seed card's version of that aspect; 0.0 means it may change completely. Edit freely - this file is the wording, not the mechanism. Bands are matched by the first entry whose 'upto' is >= the value.",
+  "structure": [
+    {"upto": 0.2, "text": "Take only the subject matter from image 1. Compose the scene anew."},
+    {"upto": 0.4, "text": "Keep only the subject of image 1 and its essential gesture; recompose everything around it."},
+    {"upto": 0.6, "text": "Keep the overall arrangement of image 1 and the placement of its principal figure, but recompose the surrounding detail freely."},
+    {"upto": 0.8, "text": "Follow the composition of image 1 closely; small adjustments to spacing and framing are permitted."},
+    {"upto": 1.0, "text": "Hold the composition of image 1 exactly: figure placement, proportion, perspective and gesture must not move."}
+  ],
+  "style": [
+    {"upto": 0.2, "text": "Discard the rendering of image 1 entirely and adopt the reference style."},
+    {"upto": 0.4, "text": "Re-render in the reference style; keep only a trace of image 1's handling."},
+    {"upto": 0.6, "text": "Blend image 1's handling with the reference style."},
+    {"upto": 0.8, "text": "Largely preserve image 1's line quality and surface, inflected by the reference."},
+    {"upto": 1.0, "text": "Preserve the rendering of image 1: its line quality, mark-making and surface texture."}
+  ],
+  "colour": [
+    {"upto": 0.2, "text": "Take the palette from the reference. The colour of image 1 is not to be preserved."},
+    {"upto": 0.4, "text": "Move the palette decisively toward the reference."},
+    {"upto": 0.6, "text": "Meet image 1's palette and the reference's halfway."},
+    {"upto": 0.8, "text": "Keep image 1's palette, warmed or cooled slightly toward the reference."},
+    {"upto": 1.0, "text": "Keep the palette of image 1 exactly: the same hues, the same values."}
+  ],
+  "lighting": [
+    {"upto": 0.2, "text": "Relight the scene freely; ignore the light in image 1."},
+    {"upto": 0.4, "text": "Relight the scene, keeping only its general time of day."},
+    {"upto": 0.6, "text": "Keep the light direction of image 1 but restate its key and contrast."},
+    {"upto": 0.8, "text": "Keep image 1's light direction and key; contrast may shift."},
+    {"upto": 1.0, "text": "Keep the light of image 1: its direction, key, contrast and cast shadows."}
+  ],
+  "iconography": [
+    {"upto": 0.2, "text": "Re-imagine this card's symbolism from its title and meaning. Do not copy the symbols in image 1."},
+    {"upto": 0.4, "text": "Substitute new symbols for those in image 1, keeping the card's meaning."},
+    {"upto": 0.6, "text": "Keep the card's principal symbol from image 1 and replace the secondary ones."},
+    {"upto": 0.8, "text": "Keep the symbolic content of image 1, allowing minor attributes to vary."},
+    {"upto": 1.0, "text": "Keep every symbolic element of image 1 exactly: each attribute, creature and object."}
+  ]
+}

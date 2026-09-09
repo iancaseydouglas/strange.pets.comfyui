@@ -5,6 +5,9 @@ import hashlib
 import json
 import os
 import random
+import re
+import shutil
+import subprocess
 import threading
 import time
 
@@ -17,10 +20,28 @@ PACK_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_SOURCES = (".env", "environment", "node widget")
 RETRY_STATUSES = (429, 500, 502, 503, 504)
 
+# dotenvx writes every encrypted value with this prefix and leaves the file otherwise
+# a plain .env, so the same parser reads both and only the marked values need help.
+ENCRYPTED_PREFIX = "encrypted:"
+ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+# ComfyUI Desktop inherits the desktop session's PATH rather than a login shell's, so a
+# Homebrew or ~/.local install can be invisible to `which`.
+DOTENVX_FALLBACKS = (
+    "/usr/local/bin/dotenvx",
+    "/opt/homebrew/bin/dotenvx",
+    "~/.local/bin/dotenvx",
+    "~/.dotenvx/dotenvx",
+    "C:/Program Files/dotenvx/dotenvx.exe",
+)
+
 
 # --------------------------------------------------------------------------- .env
 
-_ENV_CACHE = {"stamp": None, "values": {}}
+_ENV_CACHE = {"stamp": None, "values": {}, "notes": []}
+
+# One-shot log lines, so a re-read of .env does not reprint what was already said.
+_announced = set()
 
 
 def env_file_paths():
@@ -52,32 +73,143 @@ def parse_env_file(path):
     return values
 
 
+def keys_file_for(path):
+    """dotenvx keeps the private keys in a .env.keys beside the .env it encrypted."""
+    return os.path.join(os.path.dirname(os.path.abspath(path)), ".env.keys")
+
+
+def dotenvx_binary(config):
+    """Absolute path to the dotenvx executable, or "" when it is not installed."""
+    configured = (config.get("STRANGE_PETS_DOTENVX_BIN")
+                  or os.environ.get("STRANGE_PETS_DOTENVX_BIN", "")).strip()
+    if configured:
+        expanded = os.path.expanduser(configured)
+        return expanded if os.path.isfile(expanded) else (shutil.which(configured) or "")
+    found = shutil.which("dotenvx")
+    if found:
+        return found
+    for candidate in DOTENVX_FALLBACKS:
+        expanded = os.path.expanduser(candidate)
+        if os.path.isfile(expanded):
+            return expanded
+    return ""
+
+
+def dotenvx_enabled(config):
+    value = (config.get("STRANGE_PETS_DOTENVX")
+             or os.environ.get("STRANGE_PETS_DOTENVX", "")).strip().lower()
+    return value not in ("0", "false", "off", "no")
+
+
+def dotenvx_decrypt(path, names, config, notes):
+    """Return plaintext values for `names` by shelling out to `dotenvx get`.
+
+    dotenvx merges the process environment over the file and lets the environment win,
+    which is the reverse of this pack's precedence. So the names being decrypted are
+    removed from the child's environment — what comes back is the file's own value,
+    and the .env > environment ordering still holds afterwards.
+    """
+    binary = dotenvx_binary(config)
+    if not binary:
+        notes.append(
+            "{}: {} value(s) are dotenvx-encrypted, but no dotenvx executable was found. "
+            "Install it from https://dotenvx.com, point STRANGE_PETS_DOTENVX_BIN at it, or "
+            "run `dotenvx decrypt` to store the file in plaintext.".format(path, len(names)))
+        return {}
+
+    child = {name: value for name, value in os.environ.items() if name not in names}
+    try:
+        result = subprocess.run(
+            [binary, "get", "--format", "json", "-f", path],
+            capture_output=True, text=True, timeout=30, env=child,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        notes.append("{}: could not run {}: {}".format(path, binary, exc))
+        return {}
+
+    complaint = ANSI_RE.sub("", result.stderr or "").strip()[:300]
+    try:
+        payload = json.loads(result.stdout or "{}")
+    except ValueError:
+        notes.append("{}: dotenvx returned no JSON. {}".format(path, complaint))
+        return {}
+
+    plain, failed = {}, []
+    for name in names:
+        value = str(payload.get(name) or "").strip()
+        if value and not value.startswith(ENCRYPTED_PREFIX):
+            plain[name] = value
+        else:
+            failed.append(name)
+    if failed:
+        # dotenvx exits 0 and echoes the ciphertext back when it cannot decrypt, so the
+        # ciphertext is what would otherwise be sent to the API as a key.
+        notes.append(
+            "{}: dotenvx could not decrypt {}. The private key comes from {} or from "
+            "DOTENV_PRIVATE_KEY in the environment. {}".format(
+                path, ", ".join(sorted(failed)), keys_file_for(path), complaint))
+    if plain:
+        notes.append("{}: decrypted {} value(s) via {}.".format(path, len(plain), binary))
+    return plain
+
+
 def dotenv_values():
-    """Merged contents of every .env we can find; earlier paths win. Re-read when
-    a file's mtime changes, so editing .env takes effect without restarting."""
+    """Merged contents of every .env we can find; earlier paths win. Re-read when a
+    file's mtime changes, so editing .env takes effect without restarting.
+
+    Values written by `dotenvx encrypt` are decrypted here, so the rest of the pack
+    never sees a ciphertext and precedence is unchanged by how the file is stored.
+    """
     paths = env_file_paths()
     stamp = []
     for path in paths:
-        try:
-            stamp.append((path, os.path.getmtime(path)))
-        except OSError:
-            stamp.append((path, None))
+        for candidate in (path, keys_file_for(path)):
+            try:
+                stamp.append((candidate, os.path.getmtime(candidate)))
+            except OSError:
+                stamp.append((candidate, None))
     if _ENV_CACHE["stamp"] == stamp:
         return _ENV_CACHE["values"]
 
     merged = {}
+    notes = []
     for path in reversed(paths):
         try:
-            if os.path.isfile(path):
-                merged.update(parse_env_file(path))
+            if not os.path.isfile(path):
+                continue
+            values = parse_env_file(path)
         except OSError:
             continue
+
+        encrypted = sorted(name for name, value in values.items()
+                           if value.startswith(ENCRYPTED_PREFIX))
+        if encrypted:
+            config = dict(merged)
+            config.update(values)
+            if dotenvx_enabled(config):
+                values.update(dotenvx_decrypt(os.path.abspath(path), encrypted, config, notes))
+            else:
+                notes.append("{}: {} encrypted value(s) ignored; STRANGE_PETS_DOTENVX is off.".format(
+                    path, len(encrypted)))
+            # Whatever is still ciphertext is dropped rather than passed on as a key.
+            values = {name: value for name, value in values.items()
+                      if not value.startswith(ENCRYPTED_PREFIX)}
+        merged.update(values)
+
     _ENV_CACHE["stamp"] = stamp
     _ENV_CACHE["values"] = merged
+    _ENV_CACHE["notes"] = notes
+    for note in notes:
+        if ("dotenvx", note) not in _announced:
+            _announced.add(("dotenvx", note))
+            print("[strange-pets] {}".format(note))
     return merged
 
 
-_announced = set()
+def dotenv_notes():
+    """What the last .env read had to say about encrypted values, for API Key Status."""
+    dotenv_values()
+    return list(_ENV_CACHE["notes"])
 
 
 def secret_sources(name, widget_value=""):

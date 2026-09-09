@@ -24,6 +24,7 @@ from .common import (
 )
 from .runtime import (
     cache_directory,
+    dotenv_notes,
     env_file_paths,
     cache_enabled,
     cache_purge,
@@ -298,7 +299,8 @@ class SaveImagesToDirectory:
         "prompt and generation settings into the file and/or a sidecar JSON."
     )
 
-    TOKENS = "{prefix} {index} {date} {time} {datetime} {seed} {model} {width} {height} {prompt} {ext}"
+    TOKENS = ("{prefix} {label} {index} {date} {time} {datetime} {seed} {model} {width} "
+              "{height} {prompt} {ext}")
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -342,6 +344,17 @@ class SaveImagesToDirectory:
             },
             "optional": {
                 "prompt_text": ("STRING", {"forceInput": True}),
+                "label": ("STRING", {
+                    "forceInput": True,
+                    "tooltip": "Per-image name for the {label} token — wire a deck's card "
+                               "slugs in and each file lands under its own card's name.",
+                }),
+                "index": ("INT", {
+                    "forceInput": True,
+                    "tooltip": "Overrides the running counter behind {index}. Wire a deck's "
+                               "slot numbers in and the files number by position, not by "
+                               "the order they happened to be written.",
+                }),
                 "model": ("STRING", {"forceInput": True}),
                 "seed": ("INT", {"forceInput": True}),
                 "extra_metadata": ("STRING", {"forceInput": True}),
@@ -369,14 +382,14 @@ class SaveImagesToDirectory:
 
     def save(self, images, output_dir, filename_template, prefix, format, quality,
              embed_metadata, embed_workflow, save_sidecar_json, overwrite,
-             prompt_text=None, model=None, seed=None, extra_metadata=None,
-             prompt=None, extra_pnginfo=None):
+             prompt_text=None, label=None, index=None, model=None, seed=None,
+             extra_metadata=None, prompt=None, extra_pnginfo=None):
         directory = resolve_path(output_dir, "output") or comfy_directory("output")
         os.makedirs(directory, exist_ok=True)
 
         pil_format, extension = SAVE_FORMATS.get(format, ("PNG", "png"))
         now = datetime.datetime.now()
-        index = self._next_index(directory, prefix)
+        first = self._next_index(directory, prefix) if index is None else int(index)
         batch = images if images.dim() == 4 else images.unsqueeze(0)
 
         saved = []
@@ -384,7 +397,8 @@ class SaveImagesToDirectory:
             pil = tensor_to_pil(batch[offset])
             values = {
                 "prefix": prefix,
-                "index": index + offset,
+                "label": sanitize_filename(label) if label else "",
+                "index": first + offset,
                 "date": now.strftime("%Y-%m-%d"),
                 "time": now.strftime("%H%M%S"),
                 "datetime": now.strftime("%Y-%m-%d_%H%M%S"),
@@ -405,6 +419,8 @@ class SaveImagesToDirectory:
 
             settings = {
                 "prompt": prompt_text or "",
+                "label": label or "",
+                "index": first + offset,
                 "model": model or "",
                 "seed": seed,
                 "width": pil.width,
@@ -505,6 +521,11 @@ class KeyStatus:
         lines.append("Looked for .env at:")
         for path in env_file_paths():
             lines.append("  {} {}".format("[found]" if os.path.isfile(path) else "[  -  ]", path))
+        notes = dotenv_notes()
+        if notes:
+            lines.append("")
+            lines.append("Encrypted values (dotenvx):")
+            lines.extend("  " + note for note in notes)
         report = "\n".join(lines)
         print("[strange-pets]\n" + report)
         return (report,)

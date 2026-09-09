@@ -1,0 +1,1331 @@
+{
+  "last_node_id": 18,
+  "last_link_id": 25,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -820,
+        40
+      ],
+      "size": [
+        700,
+        1800
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "# Derive a deck from a deck\n\nA seed deck in, a new deck out, in a style you locked and can lock again a year from now.\n\n**Manifest \u2192 Slot Loader \u2192 (Constraints + Style Lock + Scopes) \u2192 Resolve \u2192 generate \u2192 Frame \u2192 Lettering \u2192 Save**\n\n## Run this before you run it\n\n`scope` on the manifest is set to **proof set** \u2014 twelve cards chosen to exercise every scoping dimension: three majors, a complete court in one suit, a court in a *second* suit, and one number across all four suits and elements. That is enough to see whether the cascade is doing what you meant. Only then set `full deck`, which is 78 API calls with no partial billing.\n\n## The cascade\n\nRead it left to right. Each **Style Scope** adds one layer over a subset of the deck, and **later wins** \u2014 the rightmost node that matches a card is the specific one. That is the whole ordering rule; there is no hidden specificity calculation, because chain order is something you can see and specificity is something you would have to reason about.\n\nLayers combine differently by kind, deliberately:\n\n- **Text accumulates.** A Wands court gets the deck's prose, then the courts' prose, then its own. It refines; it does not replace.\n- **Anchors do not.** The most specific matching set leads the plate and the deck's own anchors backfill the remaining tiles \u2014 so a suit's courts read like each other first and like the deck second.\n- **Fidelity overrides.** Any axis left at **-1** inherits from the layer before, so a scope can change structure alone and leave everything else where the deck put it.\n\n## Anchors\n\n`anchor_dir` is a folder of cards you have already approved. Use **several deliberately unalike ones** \u2014 a major, a pip, a court. A single anchor is the failure mode here: the whole deck starts inheriting its composition rather than its style. They are composited into one plate that occupies one reference slot, and a model shown several cards at once is likelier to read the style they share than to copy the one picture it was handed.\n\n## The fidelity vector\n\nFive axes, each **1.0 holds the seed card's version, 0.0 lets it change entirely**: `structure`, `style`, `colour`, `lighting`, `iconography`.\n\nThe named operations are points in that space, and any combination is just another point:\n\n| | structure | style | colour | iconography |\n| --- | --- | --- | --- | --- |\n| restyle | hold | free | free | hold |\n| restructure | free | hold | hold | hold |\n| re-symbolize | hold | hold | hold | **free** |\n| retone | hold | hold | **free** | hold |\n\n**How it reaches the model, honestly.** Stability has real parameters for this and the Resolve node emits them \u2014 `control_strength`, `composition_fidelity`, `style_strength`, `change_strength`, all per card. **The FLUX.2 API has none**: its schemas carry no control strength and no style weight, only `guidance` on flex. So over FLUX.2 the vector reaches the model as *prompt language plus which image sits in which reference slot*. That is reproducible and it composes, but it is soft where a local IPAdapter would be hard. The wording lives in **`phrases.json`** beside the pack \u2014 edit it, because the exact phrasing is the part worth tuning and tuning it should not mean editing Python.\n\n## Constraints belong to the deck\n\n\"The Tower is red no matter what\" is a fact about your deck, not about a style \u2014 so it sits next to the manifest and travels through every derivation. Swap the entire style lock and the constraints still land, last, after all style text. Hex codes written in a rule are read out and rendered into the plate as a swatch, because a model follows a swatch far more reliably than it follows hex in prose.\n\n## Read the report\n\nResolve prints which layers each card ended up under, and flags any card that only ever matched the base layer. With several overlapping scopes across 78 cards you cannot hold that in your head, and a card that fell through every scope is exactly the one that will break cohesion.\n\nThe **Cohesion Report** at the end measures the finished deck \u2014 lightness and saturation against the deck's own median, plus whether the colour constraints were actually honoured. It costs nothing, so run it every time.\n\n## Cost\n\nOne API call per card in scope. Fix the seed: it makes the run reproducible *and* cacheable, so re-queuing after changing only the border or the lettering costs nothing at all."
+      ],
+      "title": "Read me \u2014 deriving a deck",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "SPTarotDeck",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        400,
+        380
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "titles",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "slugs",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 2
+        },
+        {
+          "name": "numerals",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 3
+        },
+        {
+          "name": "indices",
+          "type": "INT",
+          "links": null,
+          "slot_index": 4
+        },
+        {
+          "name": "count",
+          "type": "INT",
+          "links": null,
+          "slot_index": 5
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 6
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotDeck"
+      },
+      "widgets_values": [
+        "rws",
+        "",
+        "proof set",
+        "index=0, index=16, index=18, courts suit1, pips 7, suit2 13",
+        "roman",
+        "as written",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "title": "1 \u00b7 The deck's shape"
+    },
+    {
+      "id": 3,
+      "type": "SPTarotConstraints",
+      "pos": [
+        40,
+        480
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "constraints",
+          "type": "TAROT_RULES",
+          "links": [
+            6,
+            25
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotConstraints"
+      },
+      "widgets_values": [
+        "the-tower : dominant red, burning \u2014 #B3121B, #7A0E14\nthe-moon  : cold silver-blue, no warm tones\nwands     : warm \u2014 amber, ember, brass\n"
+      ],
+      "title": "2 \u00b7 Invariants \u2014 these survive every style"
+    },
+    {
+      "id": 4,
+      "type": "SPTarotDeckLoad",
+      "pos": [
+        500,
+        60
+      ],
+      "size": [
+        420,
+        400
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "titles",
+          "type": "STRING",
+          "links": [
+            13,
+            20,
+            23
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "numerals",
+          "type": "STRING",
+          "links": [
+            14
+          ],
+          "slot_index": 2
+        },
+        {
+          "name": "slugs",
+          "type": "STRING",
+          "links": [
+            16
+          ],
+          "slot_index": 3
+        },
+        {
+          "name": "indices",
+          "type": "INT",
+          "links": [
+            17
+          ],
+          "slot_index": 4
+        },
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "links": [
+            4,
+            24
+          ],
+          "slot_index": 5
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 6
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotDeckLoad"
+      },
+      "widgets_values": [
+        "tarot/seed",
+        "*.png",
+        "auto",
+        "blank slot",
+        1024,
+        1792,
+        ""
+      ],
+      "title": "3 \u00b7 The seed deck"
+    },
+    {
+      "id": 5,
+      "type": "SPTarotStyleLock",
+      "pos": [
+        500,
+        520
+      ],
+      "size": [
+        420,
+        560
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "style",
+          "type": "TAROT_STYLE",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "plate",
+          "type": "IMAGE",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotStyleLock"
+      },
+      "widgets_values": [
+        "Gold ink on deep indigo, engraved linework, candlelit, symbolist.",
+        "tarot/anchors/deck",
+        4,
+        1024,
+        1024,
+        0.9,
+        0.15,
+        0.25,
+        0.5,
+        1.0,
+        "tarot/styles/hidden-light.json",
+        ""
+      ],
+      "title": "4 \u00b7 The style lock"
+    },
+    {
+      "id": 6,
+      "type": "SPTarotStyleScope",
+      "pos": [
+        980,
+        520
+      ],
+      "size": [
+        400,
+        480
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "style",
+          "type": "TAROT_STYLE",
+          "link": 2,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "style",
+          "type": "TAROT_STYLE",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "plate",
+          "type": "IMAGE",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotStyleScope"
+      },
+      "widgets_values": [
+        "courts suit1",
+        "Throne architecture, heavier gold leaf, a fixed three-quarter view.",
+        "tarot/anchors/wands-courts",
+        0.6,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "title": "5 \u00b7 Courts of the first suit"
+    },
+    {
+      "id": 7,
+      "type": "SPTarotStyleScope",
+      "pos": [
+        980,
+        1040
+      ],
+      "size": [
+        400,
+        480
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "style",
+          "type": "TAROT_STYLE",
+          "link": 3,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "style",
+          "type": "TAROT_STYLE",
+          "links": [
+            5
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "plate",
+          "type": "IMAGE",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotStyleScope"
+      },
+      "widgets_values": [
+        "majors",
+        "Full-plate symbolic composition, a single dominant figure.",
+        "",
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        0.35
+      ],
+      "title": "6 \u00b7 Majors \u2014 re-symbolize"
+    },
+    {
+      "id": 8,
+      "type": "SPTarotStyleResolve",
+      "pos": [
+        1440,
+        60
+      ],
+      "size": [
+        440,
+        520
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "style",
+          "type": "TAROT_STYLE",
+          "link": 5,
+          "shape": 7
+        },
+        {
+          "name": "constraints",
+          "type": "TAROT_RULES",
+          "link": 6,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompts",
+          "type": "STRING",
+          "links": [
+            8,
+            18
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "plates",
+          "type": "IMAGE",
+          "links": [
+            7,
+            10
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 2
+        },
+        {
+          "name": "guidance",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 3
+        },
+        {
+          "name": "control_strength",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 4
+        },
+        {
+          "name": "style_strength",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 5
+        },
+        {
+          "name": "composition_fidelity",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 6
+        },
+        {
+          "name": "change_strength",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 7
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotStyleResolve"
+      },
+      "widgets_values": [
+        "Tarot card '{title}' ({numeral}), {arcana} arcana. {style} {constraints}",
+        "",
+        1024,
+        1024,
+        true,
+        true
+      ],
+      "title": "7 \u00b7 Resolve the cascade"
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "pos": [
+        1440,
+        620
+      ],
+      "size": [
+        420,
+        300
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 7,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Plates, one per scope"
+    },
+    {
+      "id": 10,
+      "type": "BFLFlux2Pro",
+      "pos": [
+        1940,
+        60
+      ],
+      "size": [
+        440,
+        460
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 9,
+          "shape": 7
+        },
+        {
+          "name": "input_image_2",
+          "type": "IMAGE",
+          "link": 10,
+          "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 8,
+          "widget": {
+            "name": "prompt"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux2Pro"
+      },
+      "widgets_values": [
+        "",
+        true,
+        31337,
+        "fixed",
+        1024,
+        1792,
+        2,
+        "png",
+        ""
+      ],
+      "title": "8 \u00b7 One call per card"
+    },
+    {
+      "id": 11,
+      "type": "SPTarotCardFrame",
+      "pos": [
+        2440,
+        60
+      ],
+      "size": [
+        420,
+        740
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 11,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "card",
+          "type": "IMAGE",
+          "links": [
+            12
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null,
+          "slot_index": 2
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotCardFrame"
+      },
+      "widgets_values": [
+        "tarot 2.75x4.75in",
+        300,
+        0,
+        0,
+        3.0,
+        "cover",
+        true,
+        7.0,
+        5.0,
+        8.0,
+        "#0d0b14",
+        "double rule",
+        "#c8a94b",
+        6,
+        "#c8a94b",
+        2,
+        14,
+        8,
+        0,
+        ""
+      ],
+      "title": "9 \u00b7 Card and border"
+    },
+    {
+      "id": 12,
+      "type": "SPTarotCardTitle",
+      "pos": [
+        2900,
+        60
+      ],
+      "size": [
+        420,
+        740
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 12,
+          "shape": 7
+        },
+        {
+          "name": "title",
+          "type": "STRING",
+          "link": 13,
+          "widget": {
+            "name": "title"
+          }
+        },
+        {
+          "name": "numeral",
+          "type": "STRING",
+          "link": 14,
+          "widget": {
+            "name": "numeral"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "card",
+          "type": "IMAGE",
+          "links": [
+            15,
+            19,
+            22
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "summary",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotCardTitle"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "",
+        "bottom",
+        "top",
+        3.6,
+        3.0,
+        "#e8dcc0",
+        10,
+        "UPPERCASE",
+        4.0,
+        10,
+        0,
+        "#000000",
+        "above title",
+        2,
+        40.0,
+        12
+      ],
+      "title": "10 \u00b7 Name and numeral"
+    },
+    {
+      "id": 13,
+      "type": "SPSaveImagesToDirectory",
+      "pos": [
+        3360,
+        60
+      ],
+      "size": [
+        420,
+        380
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 15,
+          "shape": 7
+        },
+        {
+          "name": "prompt_text",
+          "type": "STRING",
+          "link": 18,
+          "shape": 7
+        },
+        {
+          "name": "label",
+          "type": "STRING",
+          "link": 16,
+          "shape": 7
+        },
+        {
+          "name": "index",
+          "type": "INT",
+          "link": 17,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "paths",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSaveImagesToDirectory"
+      },
+      "widgets_values": [
+        "tarot/derived",
+        "{index:02d}_{label}",
+        "",
+        "png",
+        95,
+        true,
+        false,
+        true,
+        false
+      ],
+      "title": "11 \u00b7 00_the-fool.png, in deck order"
+    },
+    {
+      "id": 14,
+      "type": "SPContactSheet",
+      "pos": [
+        3360,
+        480
+      ],
+      "size": [
+        400,
+        240
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 19,
+          "shape": 7
+        },
+        {
+          "name": "labels",
+          "type": "STRING",
+          "link": 20,
+          "widget": {
+            "name": "labels"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sheet",
+          "type": "IMAGE",
+          "links": [
+            21
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPContactSheet"
+      },
+      "widgets_values": [
+        6,
+        384,
+        8,
+        32,
+        "#0b0910",
+        ""
+      ],
+      "title": "12 \u00b7 The whole deck"
+    },
+    {
+      "id": 15,
+      "type": "PreviewImage",
+      "pos": [
+        3360,
+        760
+      ],
+      "size": [
+        400,
+        460
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 21,
+          "shape": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Does it hold together?"
+    },
+    {
+      "id": 16,
+      "type": "SPTarotDeckReport",
+      "pos": [
+        3360,
+        1260
+      ],
+      "size": [
+        420,
+        300
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 22,
+          "shape": 7
+        },
+        {
+          "name": "deck",
+          "type": "TAROT_DECK",
+          "link": 24,
+          "shape": 7
+        },
+        {
+          "name": "constraints",
+          "type": "TAROT_RULES",
+          "link": 25,
+          "shape": 7
+        },
+        {
+          "name": "titles",
+          "type": "STRING",
+          "link": 23,
+          "widget": {
+            "name": "titles"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "outliers",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPTarotDeckReport"
+      },
+      "widgets_values": [
+        2.5,
+        ""
+      ],
+      "title": "13 \u00b7 Measure the drift \u2014 free"
+    },
+    {
+      "id": 17,
+      "type": "SPCostReport",
+      "pos": [
+        40,
+        820
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "credits",
+          "type": "FLOAT",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "calls",
+          "type": "INT",
+          "links": null,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPCostReport"
+      },
+      "widgets_values": [
+        false
+      ],
+      "title": "What the run cost"
+    },
+    {
+      "id": 18,
+      "type": "SPKeyStatus",
+      "pos": [
+        40,
+        1060
+      ],
+      "size": [
+        400,
+        220
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPKeyStatus"
+      },
+      "widgets_values": [
+        "all"
+      ],
+      "title": "Keys before you start"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      4,
+      0,
+      "TAROT_DECK"
+    ],
+    [
+      2,
+      5,
+      0,
+      6,
+      0,
+      "TAROT_STYLE"
+    ],
+    [
+      3,
+      6,
+      0,
+      7,
+      0,
+      "TAROT_STYLE"
+    ],
+    [
+      4,
+      4,
+      5,
+      8,
+      0,
+      "TAROT_DECK"
+    ],
+    [
+      5,
+      7,
+      0,
+      8,
+      1,
+      "TAROT_STYLE"
+    ],
+    [
+      6,
+      3,
+      0,
+      8,
+      2,
+      "TAROT_RULES"
+    ],
+    [
+      7,
+      8,
+      1,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      8,
+      0,
+      10,
+      2,
+      "STRING"
+    ],
+    [
+      9,
+      4,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      8,
+      1,
+      10,
+      1,
+      "IMAGE"
+    ],
+    [
+      11,
+      10,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      11,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      13,
+      4,
+      1,
+      12,
+      1,
+      "STRING"
+    ],
+    [
+      14,
+      4,
+      2,
+      12,
+      2,
+      "STRING"
+    ],
+    [
+      15,
+      12,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      4,
+      3,
+      13,
+      2,
+      "STRING"
+    ],
+    [
+      17,
+      4,
+      4,
+      13,
+      3,
+      "INT"
+    ],
+    [
+      18,
+      8,
+      0,
+      13,
+      1,
+      "STRING"
+    ],
+    [
+      19,
+      12,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
+      4,
+      1,
+      14,
+      1,
+      "STRING"
+    ],
+    [
+      21,
+      14,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      22,
+      12,
+      0,
+      16,
+      0,
+      "IMAGE"
+    ],
+    [
+      23,
+      4,
+      1,
+      16,
+      3,
+      "STRING"
+    ],
+    [
+      24,
+      4,
+      5,
+      16,
+      1,
+      "TAROT_DECK"
+    ],
+    [
+      25,
+      3,
+      0,
+      16,
+      2,
+      "TAROT_RULES"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Deck + invariants",
+      "bounding": [
+        20,
+        -20,
+        900,
+        800
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "The style cascade",
+      "bounding": [
+        480,
+        480,
+        920,
+        1060
+      ],
+      "color": "#88A",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Resolve",
+      "bounding": [
+        1420,
+        -20,
+        480,
+        960
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Generate + assemble",
+      "bounding": [
+        1920,
+        -20,
+        1400,
+        840
+      ],
+      "color": "#A88",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Output + measure",
+      "bounding": [
+        3340,
+        -20,
+        460,
+        1600
+      ],
+      "color": "#A8A",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.3,
+      "offset": [
+        880,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

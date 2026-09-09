@@ -10,12 +10,16 @@ local graph alongside `SaveImage`, `PreviewImage`, or another edit node. Two API
 - **Utilities** — aspect ratios, endpoint-limit fitting, directory load/save with filename
   templating and metadata embedding, contact sheets, prompt/seed lists, and key/cost/cache
   tooling. 12 nodes.
+- **Tarot** — a canonical 78-card manifest, a slot loader that maps a folder of art onto it,
+  per-card prompt assembly, colour palettes, and card frame/lettering compositing. 6 nodes.
+- **Style cascade** — deck constraints, a style lock, scoped style layers over any subset, the
+  resolver that collapses them per card, and a cohesion report. 5 nodes.
 
 Everything is generated against the official OpenAPI descriptions shipped alongside the
 code (`bfl_openapi.json` and `stability-openapi.json`) — endpoint paths, field names,
 ranges and defaults all come from those documents rather than from memory.
 
-All 36 nodes are categorised under **strange-pets/** in the node browser, sub-grouped by
+All 47 nodes are categorised under **strange-pets/** in the node browser, sub-grouped by
 vendor (`strange-pets/BFL/FLUX.2`, `strange-pets/StabAI/Generate`, and so on).
 
 ## FLUX.2 nodes (BFL)
@@ -93,6 +97,48 @@ STABILITY_API_KEY=sk-...
 Status** node shows which source each key is coming from and where `.env` was searched for,
 without ever printing a key.
 
+### Encrypted .env files (dotenvx)
+
+A `.env` encrypted with [dotenvx](https://dotenvx.com) works as-is. `dotenvx encrypt` leaves
+the file a perfectly ordinary `.env` — same `NAME=value` lines, same comments — but each
+value becomes `encrypted:BPhOsB…`, and the private key moves into a `.env.keys` beside it
+(gitignored here) or into `DOTENV_PRIVATE_KEY`. The point is that the `.env` itself becomes
+safe to commit and to sync between machines.
+
+```bash
+dotenvx set BFL_API_KEY bfl-...      # writes an encrypted value
+dotenvx encrypt                       # or encrypt a .env you already have
+```
+
+Nothing else changes. Encrypted values are decrypted at read time and the rest of the pack
+never sees a ciphertext, so **precedence, the mtime re-read, and every node stay exactly the
+same** whether the file is plaintext or encrypted. Mixed files are fine — encrypt the keys,
+leave `STRANGE_PETS_CACHE_DIR` in the clear.
+
+Decryption shells out to the `dotenvx` binary, which is only looked for when a value actually
+needs it:
+
+- `STRANGE_PETS_DOTENVX=0` turns the whole thing off. Encrypted values are then dropped
+  rather than passed on as keys, and the reason is logged.
+- `STRANGE_PETS_DOTENVX_BIN` points at the executable. Worth setting on ComfyUI Desktop,
+  which inherits the desktop session's `PATH` rather than a login shell's — a Homebrew or
+  `~/.local` install can be invisible to it. `/usr/local/bin`, `/opt/homebrew/bin` and
+  `~/.local/bin` are checked as fallbacks anyway.
+
+Two details are handled rather than inherited. dotenvx merges the process environment over
+the file and lets the environment win; this pack's documented order is the opposite, so the
+names being decrypted are stripped from the child process's environment and the file's own
+value is what comes back. And dotenvx **exits 0 and echoes the ciphertext back** when it
+cannot decrypt — which would otherwise send `encrypted:BPhOsB…` to the API as your key — so
+anything still ciphertext after the call is dropped and reported instead.
+
+The **API Key Status** node prints all of it: which source each key came from, where `.env`
+was searched for, and what happened to any encrypted values.
+
+The alternative, if you would rather not have the pack shell out at all, is to launch ComfyUI
+under `dotenvx run -- python main.py`, which puts the decrypted values in the environment
+before the pack ever starts. That works today with no configuration.
+
 ### Why not the widget
 
 ComfyUI has no password widget type, so the `api_key` widget renders as **plain visible
@@ -135,10 +181,13 @@ with its parameter values.
 
 ## Workflows
 
-`workflows/` holds four ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use
-**Workflow → Open**. Each one carries a note node explaining its own knobs. They all start
-pointed at `example.png` — the image ComfyUI ships in its `input/` folder — so swap in your
-own.
+`workflows/` holds nine ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use
+**Workflow → Open**. Each one carries a note node explaining its own knobs. The four general
+graphs start pointed at `example.png` — the image ComfyUI ships in its `input/` folder — so
+swap in your own; the five deck graphs point at `tarot/…` paths under the input and output
+directories.
+
+**General:**
 
 | File | What it does |
 | --- | --- |
@@ -146,6 +195,18 @@ own.
 | `flux2-structure-canny.json` | Load Image → `Canny` → FLUX.2 [flex], so a generated scene follows the edges of a source photo. |
 | `flux2-variations.json` | One image into four [pro] nodes on fixed seeds 1001–1004, each saving under its own prefix. Four API calls per run. |
 | `flux2-batch-sweep.json` | The Batch / Sweep node reading a local file, sweeping `guidance` `2..6` on [flex] with a fixed seed, and writing each result to an output directory. One node, five calls. |
+
+**Deck work** — these use the Tarot nodes and are built around a set of cards rather than one
+image:
+
+| File | What it does |
+| --- | --- |
+| `tarot-style-transfer.json` | A folder of cards through FLUX.2 [pro] with one style reference on the second image slot, each keeping its own composition and saving under its own filename. A Stability Style Transfer lane runs the same pair with explicit `style_strength` / `composition_fidelity` / `change_strength` dials. |
+| `tarot-structure-fidelity.json` | The same structure held three ways, so you can see what each dial costs: Canny thresholds decide how much structure exists, `guidance` decides how hard it is followed (swept 2→8 onto a contact sheet), and Stability's `control_strength` does it without an edge map at all. |
+| `tarot-variation-sweep.json` | Two sweeps off one image on the same fixed seed — `guidance` and `steps` — each landing on its own labelled contact sheet, with the cost report beside them. |
+| `tarot-generate-and-edit.json` | A chain you sit inside: generate, then edit, then edit again, each stage taking the last result back in. Fixed seeds make every upstream stage a cache hit, so revising stage three costs only stage three. |
+| `tarot-deck-pipeline.json` | The whole thing. Manifest → slot loader → per-card prompts → generate → frame → lettering → save, plus a contact sheet of the finished deck. |
+| `tarot-deck-derive.json` | A deck derived from a deck: the full style cascade — invariants, a locked style, scoped layers over subsets, the fidelity vector — resolved per card, generated, assembled, saved and measured. Starts on the 12-card proof set. |
 
 ### There is no ControlNet in the FLUX.2 API
 
@@ -190,7 +251,8 @@ expires after 10 minutes, so the node downloads it the moment the task reports `
 ## Batching, sweeps, and local files
 
 The **FLUX.2 Batch / Sweep** node runs the API in a loop and returns a *list* of images, so
-a single downstream `SaveImage` or `PreviewImage` fires once per result.
+a single downstream `SaveImage` or `PreviewImage` fires once per result. It also returns a
+matching list of `labels` naming what varied on each one, for the Contact Sheet to caption.
 
 **Choosing the model** — a `model` widget selects the endpoint (`flux-2-pro`, `-max`,
 `-flex`, `-klein-9b`, `-klein-4b`). The model-specific widgets (`disable_pup`,
@@ -265,9 +327,10 @@ the image is still under a minimum.
 ### Contact Sheet
 
 Takes the *list* the Batch / Sweep node emits (it sets `INPUT_IS_LIST`, so it sees the
-whole set at once) and builds one labelled grid. Wire the sweep's labels in and the swept
-value is printed under each tile — a guidance sweep becomes one image to judge instead of
-five files to open.
+whole set at once) and builds one labelled grid. Wire the sweep's `labels` output in and the
+swept value is printed under each tile — a guidance sweep becomes one image to judge instead
+of five files to open. The label names only what varied (`guidance 3.5  seed 4242`), while the
+filename on disk carries the full stem.
 
 ### Aspect Ratio → Size
 
@@ -313,12 +376,18 @@ if missing.
 **Filenames** come from `filename_template`, with these tokens:
 
 ```
-{prefix} {index} {date} {time} {datetime} {seed} {model} {width} {height} {prompt} {ext}
+{prefix} {label} {index} {date} {time} {datetime} {seed} {model} {width} {height} {prompt} {ext}
 ```
 
 Format specs work, so `{prefix}_{index:04d}` gives `strange-pets_0001`. `{prompt}` is
 slugified and truncated. The index continues from whatever is already in the directory, so
-saving a list of images numbers them consecutively. Unless `overwrite` is on, an existing
+saving a list of images numbers them consecutively.
+
+`{label}` and `{index}` both take optional inputs, which is what makes a deck save legibly.
+Wire a card's slug into `label` and its slot number into `index` and
+`{index:02d}_{label}` gives `00_the-fool.png`, `01_the-magician.png` — named by card and
+ordered by position, rather than by the order the run happened to write them. Connected,
+`index` replaces the running counter entirely. Unless `overwrite` is on, an existing
 name gets a numeric suffix instead of being replaced. A bad token names itself in the error
 rather than failing obscurely.
 
@@ -334,6 +403,353 @@ class's own `INPUT_TYPES` — including the `control_after_generate` slot the fr
 inserts after a seed — and blanks exactly that entry, in both the UI workflow and the
 API-format prompt. This matters: without it, a key typed into an `api_key` widget would
 travel inside every PNG you share.
+
+## Tarot nodes
+
+Six nodes under **strange-pets/Tarot** that treat a deck as a structure rather than a pile of
+images: a set of positions, each with a name and a number, that art gets mapped onto. They are
+vendor-neutral — the generate step in the middle can be any node in this pack, or none.
+
+| Node | Purpose |
+| --- | --- |
+| Tarot Deck Manifest | The deck's slots in order, each with its title, numeral, suit, rank and element |
+| Tarot Palette | A colour reference as hex text and as a swatch image, written or extracted from a card |
+| Tarot Deck Slot Loader | Maps a folder of art onto those slots by filename, and reports what did not land |
+| Tarot Prompt Builder | One prompt per card from a template plus a shared style block |
+| Tarot Card Frame | Trim size, DPI, bleed, margins and a border — the card as a printable object |
+| Tarot Card Lettering | The name and numeral, with real letter-spacing |
+
+`workflows/tarot-deck-pipeline.json` wires all five together and carries a long note.
+
+### Tarot Deck Manifest
+
+`tradition` picks `rws`, `marseille`, `thoth` or `golden-dawn` as a starting point, setting
+the major arcana names and the suit and court names together. Golden Dawn seats the Knight at
+the top of the court in place of a King (Princess, Prince, Queen, Knight — Crowley carried that
+into the Thoth) and ends the majors on The Universe. Book T titles vary between recensions;
+`The Foolish Man`, `The Blasted Tower` and `The Last Judgement` are the forms shipped, and if
+your source reads otherwise the definition file below is where you fix it.
+
+**Order is nomenclature.** A card's number is its position in the majors list and nothing
+else, so the split between the Golden Dawn line — Strength VIII, Justice XI, which Waite
+carried into the RWS — and the Marseille line that seats them the other way is a difference in
+the *order of that list*. `rws` and `marseille` differ in ordering as well as in language, and
+swapping two entries renumbers those cards, numerals included.
+
+`scope` narrows the run — `major arcana`, `pips only`, one suit at a time — which matters
+mostly as a cost control, since every card in scope is an API call downstream.
+
+### Selectors
+
+`scope = selector` takes an expression, and the same language scopes styles and colour rules
+later on. **Space is AND, a comma is OR, `!` negates one term.**
+
+| Selector | Resolves to |
+| --- | --- |
+| `courts wands` | the four Wands courts |
+| `courts !wands` | the twelve courts of the other suits |
+| `pips 7` | the four Sevens |
+| `number=7` | the four Sevens **and The Chariot**, which genuinely is card seven |
+| `queen`, `fire`, `aces`, `majors` | by rank, element, group |
+| `majors, aces` | twenty-six cards |
+| `index=0-5`, `swords 2-4`, `number=2-5` | spans |
+| `the-tower, the-devil` | named cards |
+
+Terms are groups (`all`, `majors`, `minors`, `courts`, `pips`, `aces`), suit names, `suit1`…`suitN`
+by position, rank names, elements, card slugs, and numbers. The positional `suitN` forms keep a
+selector working after you rename Wands to Lanterns.
+
+An unrecognised term **raises**, naming what it would accept, rather than matching nothing —
+because a silent no-match is the expensive failure. A mistyped suit means that suit quietly
+keeps the deck's base style and you find out after paying for the run.
+
+### The proof set
+
+`scope = proof set` is the smallest spread that exercises every dimension the scoping can
+address — twelve cards instead of seventy-eight, for proving a pipeline before committing to a
+full run:
+
+```
+index=0, index=16, index=18, courts suit1, pips 7, suit2 13
+```
+
+| Cards | What they prove |
+| --- | --- |
+| The Fool, The Tower, The Moon | majors; numeral `0` and a late roman; a card carrying a hard colour rule |
+| Page/Knight/Queen/King of Wands | a **complete court in one suit** — the cohesion case |
+| Queen of Cups | a court in *another* suit, so a `courts` rule and a `courts wands` rule are visibly different |
+| Seven of Wands / Cups / Swords / Pentacles | one number across all four suits, and all four elements |
+
+It is written positionally, so it selects the same twelve positions under every tradition and
+under a definition of your own — only the names change.
+
+### Deck definitions
+
+Every name and every position lives in one JSON object, and `definition_path` loads one:
+
+```json
+{
+  "name": "Tarot of the Hidden Light",
+  "majors": ["The Unlit Lamp", "The Magician", "…"],
+  "suits": [{"name": "Lanterns", "element": "Fire"},
+            {"name": "Vessels",  "element": "Water"}],
+  "pips": ["Ace", "Two", "…", "Ten"],
+  "courts": ["Seeker", "Rider", "Mother", "Elder"],
+  "major_element": "Spirit"
+}
+```
+
+Nothing here is fixed at 78. The list lengths *are* the deck — a fifth suit, three pips, two
+courts and two majors builds a 27-card deck and every downstream node follows, because the
+selectors, the slot loader and the lettering all read the deck rather than assume it. Per-suit
+`element` is explicit rather than positional, so a deck that attributes Swords to Fire and
+Wands to Air says so instead of fighting the code.
+
+You do not have to write one by hand. `save_definition_to` writes the **resolved** definition
+— tradition plus every override on the node — so the way in is: start from a tradition, adjust
+`suit_names` / `court_names` / `custom_titles`, save, then load it back through
+`definition_path` as your deck's own nomenclature. What comes back out is what ran.
+
+The quick overrides still work without a file: `suit_names` and `court_names` take one
+comma-separated name per suit and per court rank.
+
+### Renaming cards
+
+`rename` takes one `target = new title` per line, and the target is whatever you have to
+hand — a slug, an index, a code, or the card's current title:
+
+```
+temperance         = Art
+21                 = The Aeon
+major-16           = The Lightning House
+The High Priestess = The Veiled One
+king-of-wands      = Elder of Lanterns
+```
+
+**A rename does not break what you have already written about that card.** `slug` follows
+the new name, so filenames and lettering read correctly, but `base_slug` keeps the original
+— so a selector or a colour rule written against `temperance` still finds the card after it
+becomes Art, and so does a file still called `temperance_v4.png`. The alternative is that
+renaming one card silently orphans every rule mentioning it, which is a bad trade for
+convenience.
+
+Both names work in both directions: `art_final.png` and `temperance_v4.png` land on the same
+slot, and `temperance` and `art` both select it.
+
+Renames survive `save_definition_to`. Majors are stored as their titles; a **minor** rename
+has nowhere to live in a suit × rank grid, so it is written to a `renames` block keyed by
+code and applied when the definition loads:
+
+```json
+"renames": { "wands-14": "Elder of Lanterns" }
+```
+
+An unknown rename target raises and says what it would accept, rather than being ignored.
+
+`numerals` gives roman, arabic or none. Courts have no numeral in any setting.
+
+### Tarot Deck Slot Loader
+
+Files are matched to slots **by name, not by order**, so a folder that grew organically still
+lands correctly. All of these resolve:
+
+```
+the-fool.png   03-empress.png   HighPriestess_final.png   XVI_the_tower.png
+wands_07.png   SevenOfCups_v2.png   queen-of-swords.png   pentacles-14.png
+```
+
+Each card generates a set of spellings — slug, title, article-stripped title, the name it
+had before you renamed it, number plus name, roman numeral, `suit07`, `07suit`,
+`sevenofwands`, `wandsseven` — and the **longest** matching one wins, so `seven-of-wands`
+beats the bare suit name.
+
+Match strictness scales with how much a name has to say. Four characters and up may sit
+inside a longer stem, which is what makes `SevenOfCups_v2.png` work. A three-letter name
+(`art`, `sun`) must land on a **whole word**, so `sun_v2.png` finds The Sun and
+`sunset_moodboard.png` does not. A purely numeric alias must match exactly, or a bare `07`
+would claim any file with a 7 in it. Anything the matcher still gets wrong is fixed with one
+`slug = filename` line in `overrides`.
+
+The `report` output is the point of the node as much as the images are. It names every file
+it matched and to what, every file it could not place, and every slot still empty — which is
+much cheaper to read before a run than to discover after one.
+
+`on_missing` decides what an unfilled slot does:
+
+- **blank slot** (default) keeps the deck's shape while it is unfinished. The position stays
+  in the run holding a labelled placeholder, so a contact sheet at the end shows the whole
+  deck *with its gaps*, rather than a shorter deck that hides them.
+- **skip** drops it, and spends nothing on it.
+- **error** refuses to run until the deck is complete.
+
+Outputs are parallel lists — `images`, `titles`, `numerals`, `slugs`, `indices` — plus the
+filtered `deck`. They stay aligned with each other under `skip`, which is why the lettering
+node can be fed `titles` and `numerals` directly without them drifting apart.
+
+### Tarot Palette
+
+Colour as both text and image. Hex codes are read out of any surrounding prose, so a colour
+rule stays one sentence — `dominant red, burning — #B3121B, #7A0E14` — instead of being split
+across a prose field and a colour field. Both `#rgb` and `#rrggbb` are read and normalised.
+
+`extract_count` with an image connected pulls that many dominant colours off it, which is how
+you lock a palette **from a card you have already approved** rather than inventing one.
+
+The `swatch` output is the point. A model follows a rendered swatch far more reliably than it
+follows six hex codes in a prompt, so the swatch goes into a reference image slot and the codes
+go into the prompt as well — belt and braces. The same swatch is what you check the result
+against afterwards. `labels` prints each code on its block: useful to look at, noise to a
+model, so leave it off for a swatch you are going to send.
+
+## The style cascade
+
+Five nodes that answer one question: how do you make seventy-eight separate API calls come
+back looking like one deck?
+
+**Deck Constraints** · **Style Lock** · **Style Scope** (chainable) · **Style Resolve** ·
+**Deck Cohesion Report**
+
+`workflows/tarot-deck-derive.json` wires them all and carries the long note.
+
+### Why a cascade
+
+The drift is not in the style prompt — all 78 calls already share that. It is that a model
+reinterprets one style block differently depending on what the base card looks like: a dense
+dark card and an airy one pull the same words apart. The only lever strong enough to counter
+that is a **visual** reference already in the deck's own idiom. So the lock is an approved
+card, or several, and everything else is scoping and bookkeeping around it.
+
+Each **Style Scope** adds a layer over any subset (the selector language above), and **later
+wins** — the rightmost node that matches a card is the specific one. Chain order is the whole
+rule; there is no hidden specificity calculation, because chain order is something you can see
+on the canvas and a computed specificity is something you would have to reason about.
+
+Layers combine differently by kind, deliberately:
+
+- **Text accumulates.** A Wands court gets the deck's prose, then the courts', then its own.
+- **Anchors do not.** The most specific matching set leads the plate and the deck's own
+  anchors backfill the remaining tiles, so a suit's courts read like each other first and like
+  the deck second.
+- **Fidelity overrides.** An axis left at `-1` inherits, so a scope can change structure alone.
+
+### Anchors
+
+`anchor_dir` is a folder of approved cards. Use **several deliberately unalike ones** — a
+major, a pip, a court. A single anchor is the failure mode: the deck starts inheriting its
+*composition* rather than its style. They composite into one plate occupying one reference
+slot, and a model shown several cards at once is likelier to read the style they share than to
+copy the one picture it was handed.
+
+### The fidelity vector
+
+Five axes, each `1.0` holding the seed card's version and `0.0` letting it change entirely:
+`structure`, `style`, `colour`, `lighting`, `iconography`. The named operations are points in
+that space, so any combination is just another point:
+
+| | structure | style | colour | iconography |
+| --- | --- | --- | --- | --- |
+| restyle | hold | free | free | hold |
+| restructure | free | hold | hold | hold |
+| re-symbolize | hold | hold | hold | **free** |
+| retone | hold | hold | **free** | hold |
+
+**How it reaches the model, honestly.** Stability has real parameters for this, and Resolve
+emits them per card — `control_strength`, `composition_fidelity`, `style_strength`,
+`change_strength`. **The FLUX.2 API has none**: its schemas carry no control strength and no
+style weight, only `guidance` on flex. Over FLUX.2 the vector therefore reaches the model as
+*prompt language plus which image sits in which reference slot*. That is reproducible and it
+composes, but it is soft where a local IPAdapter — which works at cross-attention, on weights
+this API does not expose — would be hard.
+
+The wording lives in **`phrases.json`** beside the pack, as five bands per axis. Edit it: the
+exact phrasing is the part worth tuning, and tuning it should not mean editing Python.
+`phrases_path` points at your own copy.
+
+### Constraints belong to the deck
+
+"The Tower is red no matter what" is a fact about *your deck*, not about a style — so it sits
+beside the manifest, not inside the lock, and travels through every derivation. Swap the whole
+style and the constraints still land, appended last after all style text. Same selector
+grammar, so they scope as freely:
+
+```
+the-tower : dominant red, burning — #B3121B, #7A0E14
+the-moon  : cold silver-blue, no warm tones
+wands     : warm — amber, ember, brass
+```
+
+Hex codes are read out and rendered into that card's plate as a swatch tile.
+
+### Read the report
+
+Resolve prints which layers each card ended up under, and flags cards that only ever matched
+the base layer:
+
+```
+The Tower                <- deck | majors  [the-tower]
+Queen of Wands           <- deck | courts suit1  [wands]
+Seven of Cups            <- deck
+
+only the base layer (5): Seven of Wands, Seven of Cups, …
+```
+
+With several overlapping scopes across 78 cards you cannot hold that in your head, and a card
+that fell through every scope is exactly the one that will break cohesion.
+
+### Deck Cohesion Report
+
+Measures the finished deck: lightness and saturation against the deck's **own** median, and
+whether any colour constraint that named hex codes was actually honoured. It costs no API
+calls, so run it every time — at 78 cards drift is not something you can see by eye.
+
+```
+  ! The Moon   lighter (0.92 vs 0.20, +71.8 dev); flatter (0.05 vs 0.54, -49.3 dev)
+  colour constraints: 1 card(s) checked, 1 adrift
+  ! The Tower (#B3121B, off by 0.76)
+```
+
+### Tarot Prompt Builder
+
+`{title} {numeral} {arcana} {suit} {rank} {element} {slug} {index} {style}`
+
+The split between `template` and `style` is deliberate: the template is the sentence that
+stays fixed across a deck, `style` is the one block retuned between whole-deck runs. Change
+`style` and all 78 cards change together, consistently.
+
+### Tarot Card Frame
+
+Trim size at a real DPI — `tarot 2.75x4.75in` is the standard 70×120mm stock, alongside
+poker, bridge, large and square, or `custom` in pixels. `bleed_mm` adds print bleed outside
+the trim; 3mm is the usual ask, 0 gives a screen-size card.
+
+`border` is one switch for the whole frame. Off collapses the margins to nothing, draws no
+rule, and skips the overlay and the art-box corner radius — full-bleed art at the same trim
+size. Trim, dpi, bleed and the card's own corner radius are card geometry and still apply, so
+the two states are directly comparable. It is a widget rather than a Ctrl+B bypass because
+bypassing the node loses the card geometry as well as the border; and because framing costs
+nothing once the art exists, two frame nodes off the same generate node will give you the
+deck both ways for the price of one run.
+
+`margin_pct` is the border band as a percentage of card *width*. `top_margin_extra_pct` and
+`bottom_margin_extra_pct` open up the head and foot for a numeral and a title — the art box
+shrinks to make room, so lettering never sits on the illustration.
+
+`border_style` is `none`, `keyline`, `solid band`, `double rule` or `inset panel`. Or leave it
+`none` and put a border designed elsewhere into `overlay_path` — any PNG with alpha, laid over
+the finished card at card size. `frame_overlay` + `frame_alpha` does the same from upstream in
+the graph, for a frame the API generated.
+
+### Tarot Card Lettering
+
+`title` and `numeral` are widgets you can also wire, so a deck letters itself.
+
+`tracking_px` is real letter-spacing. Pillow has no tracking parameter and display lettering
+on a card almost always wants some, so the text is laid out a glyph at a time rather than
+handed over whole. Sizes are percentages of card height, so they survive a change of trim
+size.
+
+**Set `font_path`** to a `.ttf` or `.otf`. Blank falls back to Pillow's built-in face, which
+is fine for placing the block and not fine for print.
 
 ## Stability AI nodes (Stable Image v2beta)
 
