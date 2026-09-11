@@ -203,8 +203,21 @@ with its parameter values.
 
 ## Workflows
 
-`workflows/` holds seventeen ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use
-**Workflow → Open**. Each one carries a note node explaining its own knobs. The four general
+`workflows/` holds seventeen ready-made graphs, grouped by family — [`flux2/`](workflows/flux2),
+[`stability/`](workflows/stability), [`tarot/`](workflows/tarot). Drag a `.json` onto the
+ComfyUI canvas, or use **Workflow → Open**.
+
+**[`workflows/README.md`](workflows/README.md) is the index**: every graph with what one run
+costs, a one-line summary, and which graph writes the folder another one reads. It and the
+per-workflow pages under [`workflows/docs/`](workflows/docs) are **generated from the graphs
+themselves** — each carries its documentation as a MarkdownNote on its own canvas, and that
+note is the source. A hand-written second copy would drift from the canvas within a week, and
+the canvas is the copy you would believe.
+
+Adding one is: drop the `.json` in its family folder, give it a MarkdownNote whose first
+heading is the title and whose first paragraph says what it does, then run
+`python tools/workflow_docs.py`. Nothing is registered by hand — a list you have to remember
+to update is a list that goes stale. `--check` exits non-zero when the docs are behind. Each one carries a note node explaining its own knobs. The four general
 graphs start pointed at `example.png` — the image ComfyUI ships in its `input/` folder — so
 swap in your own; the five deck graphs point at `tarot/…` paths under the input and output
 directories.
@@ -453,7 +466,7 @@ vendor-neutral — the generate step in the middle can be any node in this pack,
 | Tarot Card Frame | Trim size, DPI, bleed, margins and a border — the card as a printable object |
 | Tarot Card Lettering | The name and numeral, with real letter-spacing |
 
-`workflows/tarot-deck-pipeline.json` wires all five together and carries a long note.
+`workflows/tarot/tarot-deck-pipeline.json` wires all five together and carries a long note.
 
 ### Tarot Deck Manifest
 
@@ -643,7 +656,7 @@ back looking like one deck?
 **Deck Constraints** · **Style Lock** · **Style Scope** (chainable) · **Style Resolve** ·
 **Deck Cohesion Report**
 
-`workflows/tarot-deck-derive.json` wires them all and carries the long note.
+`workflows/tarot/tarot-deck-derive.json` wires them all and carries the long note.
 
 ### Why a cascade
 
@@ -722,7 +735,7 @@ publish one to the node library so it can be reused across workflows — both ar
 UI, by selecting nodes and converting them. Neither is a file-level import.
 
 What does cross a file boundary is **the filesystem**, and for a deck run that is the better cut
-anyway. `tarot-01-generate.json` and `tarot-02-assemble.json` split the pipeline where the money
+anyway. `tarot/tarot-01-generate.json` and `tarot/tarot-02-assemble.json` split the pipeline where the money
 is:
 
 - Stage 1 ends by writing raw art to `tarot/derived-art/` as `{index:02d}_{label}` — the exact
@@ -844,7 +857,7 @@ fetchable for 24 hours.
 
 ### One endpoint at a time
 
-`stability-01-…` through `-04-…` each isolate a single endpoint so you can learn what its dial
+`stability/stability-01-…` through `-04-…` each isolate a single endpoint so you can learn what its dial
 does without another endpoint's behaviour mixed in. Each graph runs its endpoint **three times
 at three settings** and previews them side by side — you are buying the comparison, not the
 image — then an Image Switch picks the keeper and writes it out. Ctrl+B the settings you have
@@ -874,7 +887,7 @@ settings that made it.
 
 ### Routing the control endpoints
 
-`workflows/stability-control-routing.json` exists because these four are the only place in
+`workflows/stability/stability-control-routing.json` exists because these four are the only place in
 the pack where structural adherence is **a number you set** rather than a sentence you phrase
 — the FLUX.2 API exposes no control parameters at all. It is the graph to use when you want
 to feel out what a fidelity dial actually does.
