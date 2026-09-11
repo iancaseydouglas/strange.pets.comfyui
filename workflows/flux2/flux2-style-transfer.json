@@ -1,6 +1,6 @@
 {
-  "last_node_id": 5,
-  "last_link_id": 3,
+  "last_node_id": 6,
+  "last_link_id": 4,
   "nodes": [
     {
       "id": 1,
@@ -23,7 +23,7 @@
       "color": "#432",
       "bgcolor": "#653",
       "widgets_values": [
-        "## Style transfer with FLUX.2\n\nTwo images into one FLUX.2 call: the first keeps its composition, the second lends its look, and the prompt says which is which.\n\n**input_image** \u2014 the picture whose composition you keep.\n**input_image_2** \u2014 the picture you take the look from.\n\nSocket order matters. The prompt says \"the first image\" and \"the second image\", so swapping the two Load Image nodes reverses the effect.\n\n`disable_pup` is **on**. FLUX.2 [pro] rewrites prompts by default and that rewrite tends to soften a precise instruction like this one. Turn it off if you would rather it embellish.\n\n`width` / `height` are **0** \u2014 match the input image. Any other value must be at least 64.\n\nConnect a third reference and a fourth socket appears, up to 8.\n\n### Prompt shape that works\n> Redraw the first image in the style of the second. Keep *(what stays)*. Take only *(what transfers)*.\n\nNaming what must **not** change is what keeps the subject intact."
+        "## Style transfer with FLUX.2\n\nTwo images into one FLUX.2 call: the first keeps its composition, the second lends its look, and the prompt says which is which.\n\n**input_image** \u2014 the picture whose composition you keep.\n**input_image_2** \u2014 the picture you take the look from.\n\nSocket order matters. The prompt says \"the first image\" and \"the second image\", so swapping the two Load Image nodes reverses the effect.\n\n`disable_pup` is **on**. FLUX.2 [pro] rewrites prompts by default and that rewrite tends to soften a precise instruction like this one. Turn it off if you would rather it embellish.\n\n`width` / `height` are **0** \u2014 match the input image. Any other value must be at least 64.\n\nConnect a third reference and a fourth socket appears, up to 8.\n\n### Prompt shape that works\n> Redraw the first image in the style of the second. Keep *(what stays)*. Take only *(what transfers)*.\n\nNaming what must **not** change is what keeps the subject intact.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every `prompt` field in this graph, so there is one\nplace to edit and the copies cannot drift apart, which matters here because the prompt is what tells the model which socket is which.\n\nIt emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
       ]
     },
     {
@@ -130,6 +130,14 @@
           "type": "IMAGE",
           "link": 2,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 4,
+          "widget": {
+            "name": "prompt"
+          }
         }
       ],
       "outputs": [
@@ -186,6 +194,48 @@
       "widgets_values": [
         "flux2/style_transfer"
       ]
+    },
+    {
+      "id": 6,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -70,
+        780
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Redraw the first image in the visual style of the second image.\n\nKeep from the first image: the composition, the subject and its pose, the framing, and the position of every element.\n\nTake from the second image only: the color palette, the brushwork and line quality, the surface texture, and the lighting treatment.\n\nDo not copy any object, person, or subject matter from the second image.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -212,6 +262,14 @@
       5,
       0,
       "IMAGE"
+    ],
+    [
+      4,
+      6,
+      0,
+      4,
+      2,
+      "STRING"
     ]
   ],
   "groups": [],

@@ -1,6 +1,6 @@
 {
-  "last_node_id": 8,
-  "last_link_id": 8,
+  "last_node_id": 9,
+  "last_link_id": 10,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## Style onto a set of cards, structure held\n\nEach card keeps its own composition; one reference image lends the look to all of them.\n\n**Top lane \u2014 FLUX.2 [pro].** *Load Images From Directory* emits a **list**, so the [pro] node fires once per card. The card goes into `input_image` (the thing being redrawn) and the style reference into `input_image_2`. Slot order is the whole instruction here: the prompt names which is which, so say it explicitly and keep it consistent.\n\n`disable_pup` is **on**. Prompt upsampling rewrites your wording, and a style prompt you have tuned over several runs is exactly the thing you do not want rewritten.\n\nThe `filenames` output is wired to the save node's `label`, so `the-tower.png` comes back as `styled_the-tower.png` rather than `styled_0007.png`. That is what makes a run reversible \u2014 you can always tell which card a result came from.\n\n**Bottom lane \u2014 Stability Style Transfer.** The same two images with explicit dials instead of a prompt:\n\n- `style_strength` \u2014 how much of the reference's look lands.\n- `composition_fidelity` \u2014 how hard the original composition is held. This is the one to raise when a card's structure starts drifting.\n- `change_strength` \u2014 how far from the init image it may travel at all.\n\nRun both on one card first and compare. They fail differently: FLUX.2 tends to reinterpret, Stability tends to recolour.\n\n### Cost\nOne API call per card, per lane. Point `directory` at three cards before pointing it at seventy-eight."
+        "## Style onto a set of cards, structure held\n\nEach card keeps its own composition; one reference image lends the look to all of them.\n\n**Top lane \u2014 FLUX.2 [pro].** *Load Images From Directory* emits a **list**, so the [pro] node fires once per card. The card goes into `input_image` (the thing being redrawn) and the style reference into `input_image_2`. Slot order is the whole instruction here: the prompt names which is which, so say it explicitly and keep it consistent.\n\n`disable_pup` is **on**. Prompt upsampling rewrites your wording, and a style prompt you have tuned over several runs is exactly the thing you do not want rewritten.\n\nThe `filenames` output is wired to the save node's `label`, so `the-tower.png` comes back as `styled_the-tower.png` rather than `styled_0007.png`. That is what makes a run reversible \u2014 you can always tell which card a result came from.\n\n**Bottom lane \u2014 Stability Style Transfer.** The same two images with explicit dials instead of a prompt:\n\n- `style_strength` \u2014 how much of the reference's look lands.\n- `composition_fidelity` \u2014 how hard the original composition is held. This is the one to raise when a card's structure starts drifting.\n- `change_strength` \u2014 how far from the init image it may travel at all.\n\nRun both on one card first and compare. They fail differently: FLUX.2 tends to reinterpret, Stability tends to recolour.\n\n### Cost\nOne API call per card, per lane. Point `directory` at three cards before pointing it at seventy-eight.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds the FLUX.2 lane's `prompt` and the Stability lane's\n`negative`. Stability's own `prompt` is deliberately left empty \u2014 with both `init_image` and\n`style_image` supplied, that endpoint does better with nothing to argue against, which is\nitself part of what the two lanes are here to show you."
       ],
       "title": "Read me \u2014 style transfer",
       "color": "#432",
@@ -142,6 +142,14 @@
           "type": "IMAGE",
           "link": 2,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "prompt"
+          }
         }
       ],
       "outputs": [
@@ -278,6 +286,14 @@
           "type": "IMAGE",
           "link": 7,
           "shape": 7
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 10,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -334,6 +350,50 @@
       },
       "widgets_values": [],
       "title": "Stability result"
+    },
+    {
+      "id": 9,
+      "type": "SPSharedPrompt",
+      "pos": [
+        10,
+        720
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [
+            10
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Redraw image 1 in the visual style of image 2.\n\nImage 1 is the source card: hold its composition, subject placement, figure poses, gesture and symbolic content exactly as they are.\nImage 2 is a style reference only: take its palette, line quality, texture, and lighting from it and nothing else \u2014 none of its subject matter.\n\nOutput a single tarot card illustration, full bleed, no border and no lettering.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -400,6 +460,22 @@
       8,
       0,
       "IMAGE"
+    ],
+    [
+      9,
+      9,
+      0,
+      4,
+      2,
+      "STRING"
+    ],
+    [
+      10,
+      9,
+      1,
+      7,
+      2,
+      "STRING"
     ]
   ],
   "groups": [

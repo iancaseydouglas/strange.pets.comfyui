@@ -1,6 +1,6 @@
 {
-  "last_node_id": 23,
-  "last_link_id": 31,
+  "last_node_id": 24,
+  "last_link_id": 39,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "# Stability control endpoints, routed\n\nThe four endpoints in `api.stability.ai` that do ControlNet-shaped work, wired so the **same image can go through any combination of them without rewiring**.\n\n## The four, and what they actually hold\n\n| Node | Endpoint | Takes structure from | The dial |\n| --- | --- | --- | --- |\n| Control Sketch | `control/sketch` | the image, read as line art | `control_strength` 0-1 |\n| Control Structure | `control/structure` | the image, read as mass and depth | `control_strength` 0-1 |\n| Control Style | `control/style` | **nothing** | `fidelity` 0-1 |\n| Style Transfer | `control/style-transfer` | `init_image` | three separate dials |\n\n**Read that third row before you use it.** `control/style` does not preserve your image's composition at all \u2014 it takes the image as a *style* reference and generates a new picture from the prompt, at whatever `aspect_ratio` you set. It is the odd one out, and it is the one people wire up expecting structure and then wonder why nothing survived.\n\nStyle Transfer is the only one with a genuinely separable vector: `style_strength` (how much of the reference's look lands), `composition_fidelity` (how hard the init image's composition is held \u2014 raise this when structure drifts), and `change_strength` (how far from the init image it may travel at all).\n\n## How the routing works\n\nEvery stage is preceded by an **Image Switch**, and `select` is the only thing you change:\n\n```\nSwitch 1  ->  Sketch      1=source  2=line map\nSwitch 2  ->  Structure   1=source  2=line map  3=sketch out\nSwitch 3  ->  Style       1=source  2=line map  3=sketch out  4=structure out\nSwitch 4  ->  Transfer    1=source  2=line map  3=sketch out  4=structure out  5=style out\n```\n\n- **All four set to 1** - every endpoint runs off the source independently. This is compare mode: four takes on the same image, side by side.\n- **1, 3, 4, 5** - a serial chain: source into Sketch, its output into Structure, that into Style, that into Transfer.\n- **Anything between** - Structure off the source, Style off Structure's output, Transfer off the source again. Sixteen subsets, and every sub-sequence in this order.\n\n**Order is fixed by the wiring, and that is a real constraint rather than an oversight.** A ComfyUI graph must be acyclic, so a switch can only read from stages *above* it - wiring Structure to read Style's output while Style reads Structure's would be a cycle and the graph would refuse to run. To try a different order, drag the connections. The switches give you every combination; they cannot give you every permutation.\n\n## Cost\n\n**Every un-bypassed stage is one paid call, whether or not you use its output.** A default run is four calls. To drop a stage, select it and press **Ctrl+B** - bypass passes the input straight through to the output, so downstream switches reading it receive whatever went in, and the stage costs nothing. That is the cheap way to explore: bypass three, study one.\n\n## Keep the seed fixed\n\nThe seed widgets are set to **7**, not 0. Stability treats **seed 0 as \"pick a random one\"**, which means two runs are never comparable and nothing is ever served from cache. With a fixed seed the only thing changing between runs is the routing you changed - and every request you have already made comes back from the local cache for free, so re-running after adjusting one downstream dial costs only that stage.\n\n## The line map\n\n`control/sketch` wants line art. **Canny** builds it locally, and **Invert Image** flips Canny's white-on-black to the dark-lines-on-light a sketch endpoint expects. Watch the preview: raise `low_threshold` to drop weak edges, lower it to keep more. Bypass the invert (Ctrl+B) if your source is already a drawing.\n\n## Why this is here at all\n\nThe FLUX.2 API exposes no control parameters - no control strength, no style weight, nothing. These four endpoints are the only place in this pack where structural adherence is a **number you set** rather than a sentence you phrase. If you are trying to feel out what a fidelity dial actually does, do it here, then carry the intuition back to the FLUX.2 side."
+        "# Stability control endpoints, routed\n\nThe four endpoints in `api.stability.ai` that do ControlNet-shaped work, wired so the **same image can go through any combination of them without rewiring**.\n\n## The four, and what they actually hold\n\n| Node | Endpoint | Takes structure from | The dial |\n| --- | --- | --- | --- |\n| Control Sketch | `control/sketch` | the image, read as line art | `control_strength` 0-1 |\n| Control Structure | `control/structure` | the image, read as mass and depth | `control_strength` 0-1 |\n| Control Style | `control/style` | **nothing** | `fidelity` 0-1 |\n| Style Transfer | `control/style-transfer` | `init_image` | three separate dials |\n\n**Read that third row before you use it.** `control/style` does not preserve your image's composition at all \u2014 it takes the image as a *style* reference and generates a new picture from the prompt, at whatever `aspect_ratio` you set. It is the odd one out, and it is the one people wire up expecting structure and then wonder why nothing survived.\n\nStyle Transfer is the only one with a genuinely separable vector: `style_strength` (how much of the reference's look lands), `composition_fidelity` (how hard the init image's composition is held \u2014 raise this when structure drifts), and `change_strength` (how far from the init image it may travel at all).\n\n## How the routing works\n\nEvery stage is preceded by an **Image Switch**, and `select` is the only thing you change:\n\n```\nSwitch 1  ->  Sketch      1=source  2=line map\nSwitch 2  ->  Structure   1=source  2=line map  3=sketch out\nSwitch 3  ->  Style       1=source  2=line map  3=sketch out  4=structure out\nSwitch 4  ->  Transfer    1=source  2=line map  3=sketch out  4=structure out  5=style out\n```\n\n- **All four set to 1** - every endpoint runs off the source independently. This is compare mode: four takes on the same image, side by side.\n- **1, 3, 4, 5** - a serial chain: source into Sketch, its output into Structure, that into Style, that into Transfer.\n- **Anything between** - Structure off the source, Style off Structure's output, Transfer off the source again. Sixteen subsets, and every sub-sequence in this order.\n\n**Order is fixed by the wiring, and that is a real constraint rather than an oversight.** A ComfyUI graph must be acyclic, so a switch can only read from stages *above* it - wiring Structure to read Style's output while Style reads Structure's would be a cycle and the graph would refuse to run. To try a different order, drag the connections. The switches give you every combination; they cannot give you every permutation.\n\n## Cost\n\n**Every un-bypassed stage is one paid call, whether or not you use its output.** A default run is four calls. To drop a stage, select it and press **Ctrl+B** - bypass passes the input straight through to the output, so downstream switches reading it receive whatever went in, and the stage costs nothing. That is the cheap way to explore: bypass three, study one.\n\n## Keep the seed fixed\n\nThe seed widgets are set to **7**, not 0. Stability treats **seed 0 as \"pick a random one\"**, which means two runs are never comparable and nothing is ever served from cache. With a fixed seed the only thing changing between runs is the routing you changed - and every request you have already made comes back from the local cache for free, so re-running after adjusting one downstream dial costs only that stage.\n\n## The line map\n\n`control/sketch` wants line art. **Canny** builds it locally, and **Invert Image** flips Canny's white-on-black to the dark-lines-on-light a sketch endpoint expects. Watch the preview: raise `low_threshold` to drop weak edges, lower it to keep more. Bypass the invert (Ctrl+B) if your source is already a drawing.\n\n## Why this is here at all\n\nThe FLUX.2 API exposes no control parameters - no control strength, no style weight, nothing. These four endpoints are the only place in this pack where structural adherence is a **number you set** rather than a sentence you phrase. If you are trying to feel out what a fidelity dial actually does, do it here, then carry the intuition back to the FLUX.2 side.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every `prompt` field in this graph \u2014 all four endpoints \u2014 and their `negative` too, so there is one\nplace to edit and the copies cannot drift apart. Routing the same image through different endpoints only tells you something if the prompt is genuinely the same one.\n\nIt emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
       ],
       "title": "Read me \u2014 routing the control endpoints",
       "color": "#432",
@@ -290,6 +290,22 @@
           "type": "IMAGE",
           "link": 6,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 32,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 33,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -393,6 +409,22 @@
           "type": "IMAGE",
           "link": 10,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 34,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 35,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -501,6 +533,22 @@
           "type": "IMAGE",
           "link": 15,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 36,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 37,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -621,6 +669,22 @@
           "type": "IMAGE",
           "link": 22,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 38,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 39,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -974,6 +1038,56 @@
         "all"
       ],
       "title": "STABILITY_API_KEY"
+    },
+    {
+      "id": 24,
+      "type": "SPSharedPrompt",
+      "pos": [
+        1010,
+        1620
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            32,
+            34,
+            36,
+            38
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [
+            33,
+            35,
+            37,
+            39
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        "photographic, 3d render, watermark, text"
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -1224,6 +1338,70 @@
       20,
       0,
       "IMAGE"
+    ],
+    [
+      32,
+      24,
+      0,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      33,
+      24,
+      1,
+      8,
+      2,
+      "STRING"
+    ],
+    [
+      34,
+      24,
+      0,
+      10,
+      1,
+      "STRING"
+    ],
+    [
+      35,
+      24,
+      1,
+      10,
+      2,
+      "STRING"
+    ],
+    [
+      36,
+      24,
+      0,
+      12,
+      1,
+      "STRING"
+    ],
+    [
+      37,
+      24,
+      1,
+      12,
+      2,
+      "STRING"
+    ],
+    [
+      38,
+      24,
+      0,
+      14,
+      2,
+      "STRING"
+    ],
+    [
+      39,
+      24,
+      1,
+      14,
+      3,
+      "STRING"
     ]
   ],
   "groups": [

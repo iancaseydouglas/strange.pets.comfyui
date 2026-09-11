@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `tarot` |
-| Nodes | 8 |
-| Links | 8 |
+| Nodes | 9 |
+| Links | 10 |
 | Paid API calls per run | **2 per input** |
 | Reads | `tarot/base` |
 | Writes | `tarot/styled` |
@@ -34,6 +34,13 @@ Run both on one card first and compare. They fail differently: FLUX.2 tends to r
 ### Cost
 One API call per card, per lane. Point `directory` at three cards before pointing it at seventy-eight.
 
+## The prompt lives in one node
+
+The **Shared Prompt** node feeds the FLUX.2 lane's `prompt` and the Stability lane's
+`negative`. Stability's own `prompt` is deliberately left empty — with both `init_image` and
+`style_image` supplied, that endpoint does better with nothing to argue against, which is
+itself part of what the two lanes are here to show you.
+
 ---
 
 ## Nodes in this graph
@@ -46,4 +53,5 @@ One API call per card, per lane. Point `directory` at three cards before pointin
 | `PreviewImage` | 2 |
 | `SPLoadImagesFromDirectory` | 1 |
 | `SPSaveImagesToDirectory` | 1 |
+| `SPSharedPrompt` | 1 |
 | `StabAIControlStyleTransfer` | 1 |

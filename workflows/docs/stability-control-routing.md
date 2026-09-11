@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `stability` |
-| Nodes | 23 |
-| Links | 31 |
+| Nodes | 24 |
+| Links | 39 |
 | Paid API calls per run | **4** |
 | Writes | `stability/control` |
 
@@ -62,6 +62,15 @@ The seed widgets are set to **7**, not 0. Stability treats **seed 0 as "pick a r
 
 The FLUX.2 API exposes no control parameters - no control strength, no style weight, nothing. These four endpoints are the only place in this pack where structural adherence is a **number you set** rather than a sentence you phrase. If you are trying to feel out what a fidelity dial actually does, do it here, then carry the intuition back to the FLUX.2 side.
 
+## The prompt lives in one node
+
+The **Shared Prompt** node feeds every `prompt` field in this graph — all four endpoints — and their `negative` too, so there is one
+place to edit and the copies cannot drift apart. Routing the same image through different endpoints only tells you something if the prompt is genuinely the same one.
+
+It emits a plain string, **not** a list. That is the difference between it and **Prompt
+List**, which would make each node it feeds run once per line and multiply what the graph
+costs.
+
 ---
 
 ## Nodes in this graph
@@ -78,6 +87,7 @@ The FLUX.2 API exposes no control parameters - no control strength, no style wei
 | `SPImageSwitch` | 5 |
 | `SPKeyStatus` | 1 |
 | `SPSaveImagesToDirectory` | 1 |
+| `SPSharedPrompt` | 1 |
 | `StabAIControlSketch` | 1 |
 | `StabAIControlStructure` | 1 |
 | `StabAIControlStyle` | 1 |

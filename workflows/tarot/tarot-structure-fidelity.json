@@ -1,6 +1,6 @@
 {
-  "last_node_id": 9,
-  "last_link_id": 8,
+  "last_node_id": 10,
+  "last_link_id": 10,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## Structure held, fidelity on a dial\n\nThree different dials, one card. Run them side by side and learn what each one costs you.\n\n### 1. FLUX.2 \u2014 Canny edges as a reference image\n\n**There is no ControlNet in the FLUX.2 API.** The spec exposes only the generation endpoints and none of them take a control map or a control strength. So the map is built locally and handed over as an ordinary reference image, with the prompt saying what it is for.\n\nTwo knobs, and they do different jobs:\n\n- **Canny `low_threshold`** decides how much structure even exists. Raise it and weak edges vanish; the model is then free where the map is silent. This is the coarse control.\n- **`guidance` (flex only, 1.5\u201310)** decides how hard the model tries to satisfy the prompt, and by extension the edge map you described in it. 3 wanders, 8 clamps down and starts looking stiff.\n\nThe sweep node runs `guidance` 2 \u2192 8 in steps of 1.5 against a **fixed seed**, so the only thing changing between tiles is the dial. The contact sheet prints the value under each one.\n\n### 2. Stability Control Structure \u2014 a real strength parameter\n\n`control_strength` 0\u20131 is the honest version of this: no edge map, no prompt phrasing, just how closely to follow the reference. 0.9 traces, 0.4 suggests. Start at 0.7.\n\n### Which to use\nCanny throws away everything but edges, which is what you want when the base card's colour is wrong but the drawing is right. Control Structure keeps mass and tone as well, which is what you want when the card is nearly there.\n\n### Cost\nThe sweep is 5 calls. The `guidance` sweep needs `model = flux-2-flex`; pro and max have no such parameter and the node will say so rather than silently ignore it."
+        "## Structure held, fidelity on a dial\n\nThree different dials, one card. Run them side by side and learn what each one costs you.\n\n### 1. FLUX.2 \u2014 Canny edges as a reference image\n\n**There is no ControlNet in the FLUX.2 API.** The spec exposes only the generation endpoints and none of them take a control map or a control strength. So the map is built locally and handed over as an ordinary reference image, with the prompt saying what it is for.\n\nTwo knobs, and they do different jobs:\n\n- **Canny `low_threshold`** decides how much structure even exists. Raise it and weak edges vanish; the model is then free where the map is silent. This is the coarse control.\n- **`guidance` (flex only, 1.5\u201310)** decides how hard the model tries to satisfy the prompt, and by extension the edge map you described in it. 3 wanders, 8 clamps down and starts looking stiff.\n\nThe sweep node runs `guidance` 2 \u2192 8 in steps of 1.5 against a **fixed seed**, so the only thing changing between tiles is the dial. The contact sheet prints the value under each one.\n\n### 2. Stability Control Structure \u2014 a real strength parameter\n\n`control_strength` 0\u20131 is the honest version of this: no edge map, no prompt phrasing, just how closely to follow the reference. 0.9 traces, 0.4 suggests. Start at 0.7.\n\n### Which to use\nCanny throws away everything but edges, which is what you want when the base card's colour is wrong but the drawing is right. Control Structure keeps mass and tone as well, which is what you want when the card is nearly there.\n\n### Cost\nThe sweep is 5 calls. The `guidance` sweep needs `model = flux-2-flex`; pro and max have no such parameter and the node will say so rather than silently ignore it.\n\n## The prompt lives in one node \u2014 mostly\n\nThe **Shared Prompt** node feeds the Stability lane's `prompt` and `negative`. The sweep node's\nprompt stays a widget, because it carries an extra preamble explaining that its reference image\nis a Canny edge map \u2014 a sentence the Stability lane must not be given, since its input is the\ncard itself.\n\nThat is the honest split: the subject is the same, the framing instruction is not, and forcing\none string through both would quietly mislead one of the two lanes."
       ],
       "title": "Read me \u2014 structure and fidelity",
       "color": "#432",
@@ -308,6 +308,22 @@
           "type": "IMAGE",
           "link": 7,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 10,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -363,6 +379,50 @@
       },
       "widgets_values": [],
       "title": "Structure result"
+    },
+    {
+      "id": 10,
+      "type": "SPSharedPrompt",
+      "pos": [
+        300,
+        740
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [
+            10
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "A tarot card illustration, gold ink on deep indigo, engraved linework, candlelit, no border, no lettering.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -429,6 +489,22 @@
       9,
       0,
       "IMAGE"
+    ],
+    [
+      9,
+      10,
+      0,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      10,
+      10,
+      1,
+      8,
+      2,
+      "STRING"
     ]
   ],
   "groups": [

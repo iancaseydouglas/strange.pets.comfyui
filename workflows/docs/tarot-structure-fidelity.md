@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `tarot` |
-| Nodes | 9 |
-| Links | 8 |
+| Nodes | 10 |
+| Links | 10 |
 | Paid API calls per run | **1 + a sweep** |
 | Writes | `tarot/fidelity-sweep` |
 
@@ -37,6 +37,16 @@ Canny throws away everything but edges, which is what you want when the base car
 ### Cost
 The sweep is 5 calls. The `guidance` sweep needs `model = flux-2-flex`; pro and max have no such parameter and the node will say so rather than silently ignore it.
 
+## The prompt lives in one node — mostly
+
+The **Shared Prompt** node feeds the Stability lane's `prompt` and `negative`. The sweep node's
+prompt stays a widget, because it carries an extra preamble explaining that its reference image
+is a Canny edge map — a sentence the Stability lane must not be given, since its input is the
+card itself.
+
+That is the honest split: the subject is the same, the framing instruction is not, and forcing
+one string through both would quietly mislead one of the two lanes.
+
 ---
 
 ## Nodes in this graph
@@ -49,4 +59,5 @@ The sweep is 5 calls. The `guidance` sweep needs `model = flux-2-flex`; pro and 
 | `MarkdownNote` | 1 |
 | `PreviewImage` | 3 |
 | `SPContactSheet` | 1 |
+| `SPSharedPrompt` | 1 |
 | `StabAIControlStructure` | 1 |

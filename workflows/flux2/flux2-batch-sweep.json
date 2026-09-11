@@ -1,6 +1,6 @@
 {
-  "last_node_id": 3,
-  "last_link_id": 1,
+  "last_node_id": 4,
+  "last_link_id": 2,
   "nodes": [
     {
       "id": 1,
@@ -23,7 +23,7 @@
       "color": "#432",
       "bgcolor": "#653",
       "widgets_values": [
-        "## One node, many images\n\nGenerate a whole batch from one node \u2014 variations of a single image, a folder of them, or one parameter swept across a range \u2014 without wiring up a graph per result.\n\nThis node loops the API for you and returns a **list** of images, so the Save Image below runs once per result.\n\n### Where images come from\n- **input_path** \u2014 a file, a whole **folder**, or a glob (`shots/*.png`). Relative paths resolve under the ComfyUI **input** directory. Every file found becomes its own base.\n- Leave it empty for **text-to-image** variations.\n- Connect the **input_image** socket instead to feed an upstream node; it overrides input_path.\n\n### Where images go\n- **output_dir** \u2014 each result is written here (created if missing; relative to the ComfyUI **output** directory), with the model, swept value and seed in the filename, plus a `manifest.txt`. Leave empty to only pass them downstream.\n\n### Variations vs. sweep\n- **sweep_param = none**, **variations = 6** \u2192 six variations. With **seed = -1** each gets a fresh random seed.\n- **sweep_param = guidance**, **sweep_spec = `2..6:1`**, **seed fixed** \u2192 one image at each guidance value, seed held constant so only guidance changes. This graph is set up that way.\n\n### sweep_spec syntax\n- list: `3,5,7,9`\n- range: `1.5..8` (default step) or `1.5..8:0.5`\n- `steps` and `guidance` are **flux-2-flex only**.\n\n### Cost guard\nThe batch refuses to exceed **100** API calls in one run \u2014 narrow the sweep or lower variations. Every image is one paid call."
+        "## One node, many images\n\nGenerate a whole batch from one node \u2014 variations of a single image, a folder of them, or one parameter swept across a range \u2014 without wiring up a graph per result.\n\nThis node loops the API for you and returns a **list** of images, so the Save Image below runs once per result.\n\n### Where images come from\n- **input_path** \u2014 a file, a whole **folder**, or a glob (`shots/*.png`). Relative paths resolve under the ComfyUI **input** directory. Every file found becomes its own base.\n- Leave it empty for **text-to-image** variations.\n- Connect the **input_image** socket instead to feed an upstream node; it overrides input_path.\n\n### Where images go\n- **output_dir** \u2014 each result is written here (created if missing; relative to the ComfyUI **output** directory), with the model, swept value and seed in the filename, plus a `manifest.txt`. Leave empty to only pass them downstream.\n\n### Variations vs. sweep\n- **sweep_param = none**, **variations = 6** \u2192 six variations. With **seed = -1** each gets a fresh random seed.\n- **sweep_param = guidance**, **sweep_spec = `2..6:1`**, **seed fixed** \u2192 one image at each guidance value, seed held constant so only guidance changes. This graph is set up that way.\n\n### sweep_spec syntax\n- list: `3,5,7,9`\n- range: `1.5..8` (default step) or `1.5..8:0.5`\n- `steps` and `guidance` are **flux-2-flex only**.\n\n### Cost guard\nThe batch refuses to exceed **100** API calls in one run \u2014 narrow the sweep or lower variations. Every image is one paid call.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every `prompt` field in this graph, so there is one\nplace to edit and the copies cannot drift apart \u2014 and a second sweep node added later reads the same words without you retyping them.\n\nIt emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
       ]
     },
     {
@@ -40,7 +40,16 @@
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 2,
+          "widget": {
+            "name": "prompt"
+          }
+        }
+      ],
       "outputs": [
         {
           "name": "images",
@@ -111,6 +120,48 @@
       "widgets_values": [
         "flux2/batch"
       ]
+    },
+    {
+      "id": 4,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -440,
+        700
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Generate a variation of this image. Keep the same subject, composition, and overall style; vary the fine detail, texture, and the quality of the light.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -121,6 +172,14 @@
       3,
       0,
       "IMAGE"
+    ],
+    [
+      2,
+      4,
+      0,
+      2,
+      0,
+      "STRING"
     ]
   ],
   "groups": [],

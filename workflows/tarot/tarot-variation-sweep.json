@@ -1,6 +1,6 @@
 {
-  "last_node_id": 10,
-  "last_link_id": 8,
+  "last_node_id": 11,
+  "last_link_id": 10,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## Load one card, sweep it\n\nTwo sweeps off the same image, so you can see a parameter's shape instead of guessing at it.\n\n### The distinction that matters\n\n- **`seed` = -1, `sweep_param` = none, `variations` = 8** \u2014 eight different images. This is *variation*: you are sampling the space.\n- **`seed` fixed, `sweep_param` = guidance** \u2014 one image per value with everything else nailed down. This is *a sweep*: you are measuring one axis.\n\nMixing them tells you nothing, because you cannot tell which change caused what. The top lane sweeps `guidance` on a fixed seed. The bottom lane sweeps `steps` on the *same* fixed seed, so the two ladders are directly comparable.\n\n`variations` multiplies on top of a sweep: 5 values \u00d7 2 variations = 10 calls.\n\n### sweep_spec\n- explicit list \u2014 `3,5,7,9`\n- inclusive range \u2014 `1.5..8`\n- range with step \u2014 `2..8:1.5`\n\n`steps` and `guidance` exist only on **flux-2-flex**. `seed`, `width`, `height` and `safety_tolerance` sweep on any model.\n\n### Reading the results\nEach contact sheet prints the swept value under its tile. `output_dir` also writes every frame to disk with the value and seed in the filename, plus a `manifest.txt` \u2014 so a sheet you like six weeks from now is still traceable to its settings.\n\n### Cost and speed\n`parallel` keeps that many calls in flight. The calls are network-bound, so 4 lanes is roughly 4\u00d7 faster in wall-clock and costs exactly the same. The node refuses any run over 100 calls.\n\nThe **Cost / Call Report** at the right totals what the session actually spent, and says how many results came from cache rather than the API \u2014 a re-run with the same fixed seed is free."
+        "## Load one card, sweep it\n\nTwo sweeps off the same image, so you can see a parameter's shape instead of guessing at it.\n\n### The distinction that matters\n\n- **`seed` = -1, `sweep_param` = none, `variations` = 8** \u2014 eight different images. This is *variation*: you are sampling the space.\n- **`seed` fixed, `sweep_param` = guidance** \u2014 one image per value with everything else nailed down. This is *a sweep*: you are measuring one axis.\n\nMixing them tells you nothing, because you cannot tell which change caused what. The top lane sweeps `guidance` on a fixed seed. The bottom lane sweeps `steps` on the *same* fixed seed, so the two ladders are directly comparable.\n\n`variations` multiplies on top of a sweep: 5 values \u00d7 2 variations = 10 calls.\n\n### sweep_spec\n- explicit list \u2014 `3,5,7,9`\n- inclusive range \u2014 `1.5..8`\n- range with step \u2014 `2..8:1.5`\n\n`steps` and `guidance` exist only on **flux-2-flex**. `seed`, `width`, `height` and `safety_tolerance` sweep on any model.\n\n### Reading the results\nEach contact sheet prints the swept value under its tile. `output_dir` also writes every frame to disk with the value and seed in the filename, plus a `manifest.txt` \u2014 so a sheet you like six weeks from now is still traceable to its settings.\n\n### Cost and speed\n`parallel` keeps that many calls in flight. The calls are network-bound, so 4 lanes is roughly 4\u00d7 faster in wall-clock and costs exactly the same. The node refuses any run over 100 calls.\n\nThe **Cost / Call Report** at the right totals what the session actually spent, and says how many results came from cache rather than the API \u2014 a re-run with the same fixed seed is free.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every `prompt` field in this graph \u2014 both sweeps, so there is one\nplace to edit and the copies cannot drift apart. The two ladders are only comparable while they are reading identical words.\n\nIt emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
       ],
       "title": "Read me \u2014 variations and sweeps",
       "color": "#432",
@@ -82,6 +82,14 @@
           "type": "IMAGE",
           "link": 1,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "prompt"
+          }
         }
       ],
       "outputs": [
@@ -230,6 +238,14 @@
           "type": "IMAGE",
           "link": 5,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 10,
+          "widget": {
+            "name": "prompt"
+          }
         }
       ],
       "outputs": [
@@ -431,6 +447,49 @@
         "show stats"
       ],
       "title": "Re-runs come from here"
+    },
+    {
+      "id": 11,
+      "type": "SPSharedPrompt",
+      "pos": [
+        20,
+        180
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            9,
+            10
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "A variation of this tarot card. Keep the subject, composition and symbolic content; vary the linework, texture and the quality of the light.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -497,6 +556,22 @@
       8,
       0,
       "IMAGE"
+    ],
+    [
+      9,
+      11,
+      0,
+      3,
+      1,
+      "STRING"
+    ],
+    [
+      10,
+      11,
+      0,
+      6,
+      1,
+      "STRING"
     ]
   ],
   "groups": [

@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `tarot` |
-| Nodes | 12 |
-| Links | 8 |
+| Nodes | 13 |
+| Links | 9 |
 | Paid API calls per run | **5** |
 | Writes | `tarot/edits` |
 
@@ -38,6 +38,17 @@ That only holds while the request is byte-identical, which means **fixing the se
 ### Cache
 Clear it from the **Cache Tools** node when a chain has drifted somewhere you cannot get back from, or when you want the API's actual current output rather than a stored one.
 
+## The prompt lives in one node — but only the first one
+
+The **Shared Prompt** node feeds **stage 1**, the base generation. The edit instructions on
+stages 2, 3 and 4 stay as widgets on their own nodes, because they are not the same prompt:
+"make the moon fuller" and "shift the palette toward copper" are different sentences that
+happen to be in the same chain. Sharing them would be a bug, not a convenience.
+
+So the rule here is the useful one rather than the uniform one: what is genuinely shared goes
+in the shared node, and what differs per stage stays where you can see it next to the stage it
+belongs to.
+
 ---
 
 ## Nodes in this graph
@@ -50,5 +61,6 @@ Clear it from the **Cache Tools** node when a chain has drifted somewhere you ca
 | `SPCacheTools` | 1 |
 | `SPCostReport` | 1 |
 | `SPSaveImagesToDirectory` | 1 |
+| `SPSharedPrompt` | 1 |
 | `StabAIEditSearchAndReplace` | 1 |
 | `StabAIUpscaleConservative` | 1 |

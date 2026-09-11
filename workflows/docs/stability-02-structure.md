@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `stability` |
-| Nodes | 12 |
-| Links | 12 |
+| Nodes | 13 |
+| Links | 18 |
 | Paid API calls per run | **3 per input** |
 | Reads | `stability/in` |
 | Writes | `stability/out/structure` |
@@ -57,6 +57,15 @@ Each of the three nodes below is **one paid call**, so a run is three. That is t
 
 Seeds are fixed at **7**. Stability treats seed 0 as "pick a random one", which would make the three results incomparable and stop any of them being cached. With the seed pinned, the dial is the only thing that differs between them.
 
+## The prompt lives in one node
+
+The **Shared Prompt** node feeds every `prompt` field in this graph — all three settings — and their `negative` too, so there is one
+place to edit and the copies cannot drift apart. The comparison is only honest while every setting is reading the same words.
+
+It emits a plain string, **not** a list. That is the difference between it and **Prompt
+List**, which would make each node it feeds run once per line and multiply what the graph
+costs.
+
 ---
 
 ## Nodes in this graph
@@ -69,4 +78,5 @@ Seeds are fixed at **7**. Stability treats seed 0 as "pick a random one", which 
 | `SPImageSwitch` | 1 |
 | `SPLoadImagesFromDirectory` | 1 |
 | `SPSaveImagesToDirectory` | 1 |
+| `SPSharedPrompt` | 1 |
 | `StabAIControlStructure` | 3 |

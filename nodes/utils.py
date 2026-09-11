@@ -864,6 +864,39 @@ class SeedList:
         return ([start + index * step for index in range(count)],)
 
 
+class SharedPrompt:
+    CATEGORY = UTIL_CATEGORY
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("prompt", "negative")
+    FUNCTION = "emit"
+    DESCRIPTION = (
+        "One prompt in one place, wired into every node that needs it. A graph comparing "
+        "three settings of a dial has three copies of the same prompt otherwise, and the "
+        "comparison is only honest while all three stay identical."
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {
+                    "multiline": True, "default": "",
+                    "tooltip": "Wire this into every node's prompt. Unlike Prompt List this "
+                               "emits one string, not a list, so the nodes it feeds still run "
+                               "once each rather than once per line.",
+                }),
+                "negative": ("STRING", {
+                    "multiline": True, "default": "",
+                    "tooltip": "Stability endpoints only; the FLUX.2 API has no negative "
+                               "prompt. Left blank it is omitted from the request.",
+                }),
+            }
+        }
+
+    def emit(self, prompt, negative):
+        return (prompt, negative)
+
+
 class ImageSwitch:
     CATEGORY = UTIL_CATEGORY
     RETURN_TYPES = ("IMAGE",)
@@ -1027,6 +1060,7 @@ NODE_CLASS_MAPPINGS = {
     "SPContactSheet": ContactSheet,
     "SPPromptList": PromptList,
     "SPSeedList": SeedList,
+    "SPSharedPrompt": SharedPrompt,
     "SPImageSwitch": ImageSwitch,
     "SPJoinImageAlpha": JoinImageAlpha,
     "SPKeyStatus": KeyStatus,
@@ -1042,6 +1076,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SPContactSheet": "Contact Sheet",
     "SPPromptList": "Prompt List",
     "SPSeedList": "Seed List",
+    "SPSharedPrompt": "Shared Prompt",
     "SPImageSwitch": "Image Switch",
     "SPJoinImageAlpha": "Join Image + Alpha",
     "SPKeyStatus": "API Key Status",

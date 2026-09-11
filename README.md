@@ -9,7 +9,7 @@ local graph alongside `SaveImage`, `PreviewImage`, or another edit node. Two API
   Upscale and Control. 17 nodes.
 - **Utilities** — aspect ratios, endpoint-limit fitting, directory load/save with filename
   templating and metadata embedding, contact sheets, prompt/seed lists, and key/cost/cache
-  tooling. 12 nodes.
+  tooling. 13 nodes.
 - **Tarot** — a canonical 78-card manifest, a slot loader that maps a folder of art onto it,
   per-card prompt assembly, colour palettes, and card frame/lettering compositing. 6 nodes.
 - **Style cascade** — deck constraints, a style lock, scoped style layers over any subset, the
@@ -19,7 +19,7 @@ Everything is generated against the official OpenAPI descriptions shipped alongs
 code (`bfl_openapi.json` and `stability-openapi.json`) — endpoint paths, field names,
 ranges and defaults all come from those documents rather than from memory.
 
-All 47 nodes are categorised under **strange-pets/** in the node browser, sub-grouped by
+All 48 nodes are categorised under **strange-pets/** in the node browser, sub-grouped by
 vendor (`strange-pets/BFL/FLUX.2`, `strange-pets/StabAI/Generate`, and so on).
 
 ## FLUX.2 nodes (BFL)
@@ -355,11 +355,32 @@ Vendor-neutral helpers under **strange-pets/Utils** and **strange-pets/IO**.
 | Contact Sheet | Lay a list of images out in a labelled grid |
 | Prompt List | One prompt per line becomes a list, so a sweep can vary the prompt |
 | Seed List | Explicit, sequential or reproducibly-random seed sets |
+| Shared Prompt | One prompt (and negative) wired into every node that needs it |
 | Image Switch | Pick one of six inputs by index — A/B providers without rewiring |
 | Join Image + Alpha | Attach a mask as alpha, for the endpoints that mask via transparency |
 | API Key Status | Which source each key comes from, without revealing it |
 | Cost / Call Report | Credits and call counts for the session |
 | Cache Tools | Inspect or clear the result cache |
+
+### Shared Prompt
+
+Emits `prompt` and `negative` as plain strings, to be wired into every node that takes them.
+A graph comparing three settings of a dial otherwise carries three copies of the same prompt,
+and the comparison is only honest while all three stay identical — three copies is three
+chances for one to drift. Every shipped workflow that takes a prompt now routes it through one
+of these.
+
+**It emits a string, not a list**, which is the whole difference between it and **Prompt
+List**. A list makes each node it feeds run once per line, multiplying the calls; this feeds
+many nodes from one value and every one of them still runs once.
+
+`negative` is for the Stability endpoints — the FLUX.2 API has no negative prompt — and is
+omitted from a request when left blank.
+
+Prompts that genuinely differ per node stay where they are. In `tarot-generate-and-edit` the
+three edit instructions are different sentences that happen to share a chain, and in
+`tarot-structure-fidelity` only one lane's input is a Canny map and only that lane's prompt
+should say so. Sharing those would be a bug wearing the costume of a convenience.
 
 ### Fit Image To Endpoint Limits
 

@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `flux2` |
-| Nodes | 5 |
-| Links | 3 |
+| Nodes | 6 |
+| Links | 4 |
 | Paid API calls per run | **1** |
 
 ---
@@ -31,6 +31,15 @@ Connect a third reference and a fourth socket appears, up to 8.
 
 Naming what must **not** change is what keeps the subject intact.
 
+## The prompt lives in one node
+
+The **Shared Prompt** node feeds every `prompt` field in this graph, so there is one
+place to edit and the copies cannot drift apart, which matters here because the prompt is what tells the model which socket is which.
+
+It emits a plain string, **not** a list. That is the difference between it and **Prompt
+List**, which would make each node it feeds run once per line and multiply what the graph
+costs.
+
 ---
 
 ## Nodes in this graph
@@ -40,4 +49,5 @@ Naming what must **not** change is what keeps the subject intact.
 | `BFLFlux2Pro` | 1 |
 | `LoadImage` | 2 |
 | `MarkdownNote` | 1 |
+| `SPSharedPrompt` | 1 |
 | `SaveImage` | 1 |

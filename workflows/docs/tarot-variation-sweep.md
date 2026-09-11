@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `tarot` |
-| Nodes | 10 |
-| Links | 8 |
+| Nodes | 11 |
+| Links | 10 |
 | Paid API calls per run | **a sweep** |
 | Reads | `tarot/base/the-moon.png` |
 | Writes | `tarot/sweeps/guidance` · `tarot/sweeps/steps` |
@@ -41,6 +41,15 @@ Each contact sheet prints the swept value under its tile. `output_dir` also writ
 
 The **Cost / Call Report** at the right totals what the session actually spent, and says how many results came from cache rather than the API — a re-run with the same fixed seed is free.
 
+## The prompt lives in one node
+
+The **Shared Prompt** node feeds every `prompt` field in this graph — both sweeps, so there is one
+place to edit and the copies cannot drift apart. The two ladders are only comparable while they are reading identical words.
+
+It emits a plain string, **not** a list. That is the difference between it and **Prompt
+List**, which would make each node it feeds run once per line and multiply what the graph
+costs.
+
 ---
 
 ## Nodes in this graph
@@ -54,3 +63,4 @@ The **Cost / Call Report** at the right totals what the session actually spent, 
 | `SPCacheTools` | 1 |
 | `SPContactSheet` | 2 |
 | `SPCostReport` | 1 |
+| `SPSharedPrompt` | 1 |

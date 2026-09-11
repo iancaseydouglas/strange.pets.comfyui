@@ -1,6 +1,6 @@
 {
-  "last_node_id": 12,
-  "last_link_id": 8,
+  "last_node_id": 13,
+  "last_link_id": 9,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## Generate, then keep editing\n\nA chain you sit inside rather than a graph you run once. Each stage takes the previous image back in as `input_image`, so an edit is just another call with the last result attached.\n\n### The thing that makes this affordable\n\n**Identical requests are served from the cache, not the API.** So once stage 1 has run on a fixed seed, editing stage 2's prompt and re-queuing does *not* re-bill stage 1 \u2014 it comes back instantly from disk, and only stage 2 onward actually costs anything.\n\nThat only holds while the request is byte-identical, which means **fixing the seeds**. With `seed = -1` every re-queue is a fresh random seed, a different request, and a new charge for every stage. Fix the seeds and the chain becomes a document you can revise. `control_after_generate` on each seed widget should stay **fixed**.\n\n### Working method\n\n1. Run stage 1 alone. Bypass everything downstream with **Ctrl+B** until you like the base.\n2. Un-bypass stage 2, describe one change. Re-queue: stage 1 is free.\n3. Repeat. When a stage goes wrong, Ctrl+B it and try a different wording \u2014 the stages above it stay put.\n\n`disable_pup` is on throughout. An edit instruction that gets \"upsampled\" into something more elaborate is an edit you did not ask for.\n\n### The last two stages\n**Search & Replace** takes `search_prompt` (what to find \u2014 it segments the image itself, no mask needed) and `prompt` (what to put there). Good for swapping one object without touching the rest.\n\n**Upscale Conservative** finishes: `creativity` near 0.2 keeps it honest, higher invents detail that was never in the card.\n\n### Cache\nClear it from the **Cache Tools** node when a chain has drifted somewhere you cannot get back from, or when you want the API's actual current output rather than a stored one."
+        "## Generate, then keep editing\n\nA chain you sit inside rather than a graph you run once. Each stage takes the previous image back in as `input_image`, so an edit is just another call with the last result attached.\n\n### The thing that makes this affordable\n\n**Identical requests are served from the cache, not the API.** So once stage 1 has run on a fixed seed, editing stage 2's prompt and re-queuing does *not* re-bill stage 1 \u2014 it comes back instantly from disk, and only stage 2 onward actually costs anything.\n\nThat only holds while the request is byte-identical, which means **fixing the seeds**. With `seed = -1` every re-queue is a fresh random seed, a different request, and a new charge for every stage. Fix the seeds and the chain becomes a document you can revise. `control_after_generate` on each seed widget should stay **fixed**.\n\n### Working method\n\n1. Run stage 1 alone. Bypass everything downstream with **Ctrl+B** until you like the base.\n2. Un-bypass stage 2, describe one change. Re-queue: stage 1 is free.\n3. Repeat. When a stage goes wrong, Ctrl+B it and try a different wording \u2014 the stages above it stay put.\n\n`disable_pup` is on throughout. An edit instruction that gets \"upsampled\" into something more elaborate is an edit you did not ask for.\n\n### The last two stages\n**Search & Replace** takes `search_prompt` (what to find \u2014 it segments the image itself, no mask needed) and `prompt` (what to put there). Good for swapping one object without touching the rest.\n\n**Upscale Conservative** finishes: `creativity` near 0.2 keeps it honest, higher invents detail that was never in the card.\n\n### Cache\nClear it from the **Cache Tools** node when a chain has drifted somewhere you cannot get back from, or when you want the API's actual current output rather than a stored one.\n\n## The prompt lives in one node \u2014 but only the first one\n\nThe **Shared Prompt** node feeds **stage 1**, the base generation. The edit instructions on\nstages 2, 3 and 4 stay as widgets on their own nodes, because they are not the same prompt:\n\"make the moon fuller\" and \"shift the palette toward copper\" are different sentences that\nhappen to be in the same chain. Sharing them would be a bug, not a convenience.\n\nSo the rule here is the useful one rather than the uniform one: what is genuinely shared goes\nin the shared node, and what differs per stage stays where you can see it next to the stage it\nbelongs to."
       ],
       "title": "Read me \u2014 iterative editing",
       "color": "#432",
@@ -42,7 +42,16 @@
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "prompt"
+          }
+        }
+      ],
       "outputs": [
         {
           "name": "image",
@@ -468,6 +477,48 @@
         false
       ],
       "title": "What actually hit the API"
+    },
+    {
+      "id": 13,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -430,
+        960
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "A tarot card illustration: The Moon. Two towers, a winding path, a crayfish in still water, a dog and a wolf howling. Gold ink on deep indigo, engraved linework, candlelit. Full bleed, no border, no lettering.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -534,6 +585,14 @@
       10,
       0,
       "IMAGE"
+    ],
+    [
+      9,
+      13,
+      0,
+      2,
+      0,
+      "STRING"
     ]
   ],
   "groups": [

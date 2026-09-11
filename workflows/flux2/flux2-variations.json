@@ -1,6 +1,6 @@
 {
-  "last_node_id": 10,
-  "last_link_id": 8,
+  "last_node_id": 11,
+  "last_link_id": 12,
   "nodes": [
     {
       "id": 1,
@@ -23,7 +23,7 @@
       "color": "#432",
       "bgcolor": "#653",
       "widgets_values": [
-        "## Four variations, four API calls\n\nFour takes on one image at fixed seeds, so the set is reproducible and you can tell which seed gave you which result.\n\nEvery run bills **four** generations. Delete a branch to spend less; copy one to spend more.\n\nThe four nodes are identical apart from `seed` (1001\u20131004, all `fixed`), so the set is reproducible \u2014 same seeds, same four images. Set a seed to **-1** for a fresh random one on each run.\n\n`disable_pup` is **off** on purpose. FLUX.2 [pro] upsamples the prompt by default and rewrites it differently on each call, which widens the spread. Turn it **on** for tighter variations that differ mostly by seed.\n\nEach branch writes its own filename prefix so the outputs stay tellable apart on disk. Save Image previews inside the node, so there is no separate Preview node here.\n\n### Dialling the spread\n- **Narrow** \u2014 name what must not change: *\"same subject, same composition, same palette\"*.\n- **Wide** \u2014 ask for the change: *\"same subject, different time of day and camera angle\"*."
+        "## Four variations, four API calls\n\nFour takes on one image at fixed seeds, so the set is reproducible and you can tell which seed gave you which result.\n\nEvery run bills **four** generations. Delete a branch to spend less; copy one to spend more.\n\nThe four nodes are identical apart from `seed` (1001\u20131004, all `fixed`), so the set is reproducible \u2014 same seeds, same four images. Set a seed to **-1** for a fresh random one on each run.\n\n`disable_pup` is **off** on purpose. FLUX.2 [pro] upsamples the prompt by default and rewrites it differently on each call, which widens the spread. Turn it **on** for tighter variations that differ mostly by seed.\n\nEach branch writes its own filename prefix so the outputs stay tellable apart on disk. Save Image previews inside the node, so there is no separate Preview node here.\n\n### Dialling the spread\n- **Narrow** \u2014 name what must not change: *\"same subject, same composition, same palette\"*.\n- **Wide** \u2014 ask for the change: *\"same subject, different time of day and camera angle\"*.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every `prompt` field in this graph \u2014 all four of them, so there is one\nplace to edit and the copies cannot drift apart. Four copies of one prompt is four chances for one of them to say something slightly different, which would make the seeds no longer the only variable.\n\nIt emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
       ]
     },
     {
@@ -88,6 +88,14 @@
           "type": "IMAGE",
           "link": 1,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "prompt"
+          }
         }
       ],
       "outputs": [
@@ -166,6 +174,14 @@
           "type": "IMAGE",
           "link": 3,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 10,
+          "widget": {
+            "name": "prompt"
+          }
         }
       ],
       "outputs": [
@@ -244,6 +260,14 @@
           "type": "IMAGE",
           "link": 5,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 11,
+          "widget": {
+            "name": "prompt"
+          }
         }
       ],
       "outputs": [
@@ -322,6 +346,14 @@
           "type": "IMAGE",
           "link": 7,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 12,
+          "widget": {
+            "name": "prompt"
+          }
         }
       ],
       "outputs": [
@@ -379,6 +411,51 @@
       "widgets_values": [
         "flux2/variation_4"
       ]
+    },
+    {
+      "id": 11,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -70,
+        600
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Create a new variation of this image. Keep the same subject, the same composition, and the same overall style, but vary the fine details, the surface texture, and the quality of the light.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -445,6 +522,38 @@
       10,
       0,
       "IMAGE"
+    ],
+    [
+      9,
+      11,
+      0,
+      3,
+      1,
+      "STRING"
+    ],
+    [
+      10,
+      11,
+      0,
+      5,
+      1,
+      "STRING"
+    ],
+    [
+      11,
+      11,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      12,
+      11,
+      0,
+      9,
+      1,
+      "STRING"
     ]
   ],
   "groups": [],

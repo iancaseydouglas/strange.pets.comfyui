@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `flux2` |
-| Nodes | 6 |
-| Links | 4 |
+| Nodes | 7 |
+| Links | 5 |
 | Paid API calls per run | **1** |
 
 ---
@@ -34,6 +34,15 @@ Canny is ComfyUI core; depth is not. Install **comfyui_controlnet_aux**, drop in
 ### Plain image-to-image
 Select the Canny node and press **Ctrl+B** to bypass it. Load Image then feeds `input_image` directly and you get an ordinary edit of the photo. Rewrite the prompt as an instruction — "change the ... to ..." — when you do.
 
+## The prompt lives in one node
+
+The **Shared Prompt** node feeds every `prompt` field in this graph, so there is one
+place to edit and the copies cannot drift apart — the Canny-specific preamble and the scene description stay together in one place.
+
+It emits a plain string, **not** a list. That is the difference between it and **Prompt
+List**, which would make each node it feeds run once per line and multiply what the graph
+costs.
+
 ---
 
 ## Nodes in this graph
@@ -45,4 +54,5 @@ Select the Canny node and press **Ctrl+B** to bypass it. Load Image then feeds `
 | `LoadImage` | 1 |
 | `MarkdownNote` | 1 |
 | `PreviewImage` | 1 |
+| `SPSharedPrompt` | 1 |
 | `SaveImage` | 1 |

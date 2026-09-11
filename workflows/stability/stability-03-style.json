@@ -1,6 +1,6 @@
 {
-  "last_node_id": 12,
-  "last_link_id": 12,
+  "last_node_id": 13,
+  "last_link_id": 18,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "# 03 \u00b7 control/style\n\n**Read this before you use it: this endpoint keeps none of your image's composition.**\n\nIt is the odd one of the four. The image you give it is a **style reference**, not a structural one. It looks at palette, texture, mark-making and light, then generates an entirely new picture from your *prompt*, at whatever `aspect_ratio` you set. Nothing of the input's arrangement survives, and it is not supposed to.\n\nIf you wire it up expecting a restyled version of your card and get an unrelated image in roughly the right colours, it is working correctly and you wanted `control/structure` or `control/style-transfer`.\n\n## What it is actually for\n\nTwo things, both real:\n\n- **Extracting a look.** Point it at a card you have approved and prompt for something else entirely. What comes back tells you what the model thinks your style *is*, which is a genuinely useful thing to learn before you lock it across 78 cards.\n- **Generating new material in an established style** \u2014 a card back, a box panel, a border motif \u2014 where you have no composition to preserve because there is nothing there yet.\n\n## The dial\n\n`fidelity` 0-1 is how closely the output matches the reference's look.\n\n- **0.2** \u2014 the reference is a hint. Mostly the prompt's picture.\n- **0.5** \u2014 the default; a clear family resemblance.\n- **0.9** \u2014 as close to the reference's surface as it can manage, sometimes at the cost of following the prompt.\n\n`aspect_ratio` matters here in a way it does not elsewhere, because there is no input geometry to inherit. Set it to your card's ratio (`4:5` is close to standard tarot stock) or you will get squares.\n\n## Chaining these four\n\nThey all share one convention, and that is the whole mechanism \u2014 there is no workflow-calls-a-workflow in ComfyUI, so a folder is the join:\n\n```\nstability/in/              drop your sources here\nstability/out/sketch/      <- 01 writes here\nstability/out/structure/   <- 02\nstability/out/style/       <- 03\nstability/out/transfer/    <- 04\n```\n\nEvery one of these graphs reads **the newest image** in its `directory` (`sort_by = modified`, `descending`, `limit = 1`). So to feed one endpoint's output into another, change this graph's `directory` to that graph's output folder and run it. Structure reading `stability/out/sketch` is a two-step chain; nothing else needs rewiring.\n\nThe filename carries through: `Load Images From Directory` emits `filenames`, which is wired to the save node's `label`, so `the-fool.png` stays `the-fool.png` at every stage and you can always tell which source a result came from. `overwrite` is off, so a second run lands as `the-fool_1.png` rather than destroying the first \u2014 and \"newest by modified\" still picks it up.\n\nEach result gets a sidecar JSON with the prompt and settings that made it.\n\n## Cost\n\nEach of the three nodes below is **one paid call**, so a run is three. That is the point of a study graph \u2014 you are buying the comparison, not the image. **Ctrl+B** any of them to drop it from the run once you know which end of the dial you care about; bypass passes the input straight through and costs nothing.\n\nSeeds are fixed at **7**. Stability treats seed 0 as \"pick a random one\", which would make the three results incomparable and stop any of them being cached. With the seed pinned, the dial is the only thing that differs between them.\n"
+        "# 03 \u00b7 control/style\n\n**Read this before you use it: this endpoint keeps none of your image's composition.**\n\nIt is the odd one of the four. The image you give it is a **style reference**, not a structural one. It looks at palette, texture, mark-making and light, then generates an entirely new picture from your *prompt*, at whatever `aspect_ratio` you set. Nothing of the input's arrangement survives, and it is not supposed to.\n\nIf you wire it up expecting a restyled version of your card and get an unrelated image in roughly the right colours, it is working correctly and you wanted `control/structure` or `control/style-transfer`.\n\n## What it is actually for\n\nTwo things, both real:\n\n- **Extracting a look.** Point it at a card you have approved and prompt for something else entirely. What comes back tells you what the model thinks your style *is*, which is a genuinely useful thing to learn before you lock it across 78 cards.\n- **Generating new material in an established style** \u2014 a card back, a box panel, a border motif \u2014 where you have no composition to preserve because there is nothing there yet.\n\n## The dial\n\n`fidelity` 0-1 is how closely the output matches the reference's look.\n\n- **0.2** \u2014 the reference is a hint. Mostly the prompt's picture.\n- **0.5** \u2014 the default; a clear family resemblance.\n- **0.9** \u2014 as close to the reference's surface as it can manage, sometimes at the cost of following the prompt.\n\n`aspect_ratio` matters here in a way it does not elsewhere, because there is no input geometry to inherit. Set it to your card's ratio (`4:5` is close to standard tarot stock) or you will get squares.\n\n## Chaining these four\n\nThey all share one convention, and that is the whole mechanism \u2014 there is no workflow-calls-a-workflow in ComfyUI, so a folder is the join:\n\n```\nstability/in/              drop your sources here\nstability/out/sketch/      <- 01 writes here\nstability/out/structure/   <- 02\nstability/out/style/       <- 03\nstability/out/transfer/    <- 04\n```\n\nEvery one of these graphs reads **the newest image** in its `directory` (`sort_by = modified`, `descending`, `limit = 1`). So to feed one endpoint's output into another, change this graph's `directory` to that graph's output folder and run it. Structure reading `stability/out/sketch` is a two-step chain; nothing else needs rewiring.\n\nThe filename carries through: `Load Images From Directory` emits `filenames`, which is wired to the save node's `label`, so `the-fool.png` stays `the-fool.png` at every stage and you can always tell which source a result came from. `overwrite` is off, so a second run lands as `the-fool_1.png` rather than destroying the first \u2014 and \"newest by modified\" still picks it up.\n\nEach result gets a sidecar JSON with the prompt and settings that made it.\n\n## Cost\n\nEach of the three nodes below is **one paid call**, so a run is three. That is the point of a study graph \u2014 you are buying the comparison, not the image. **Ctrl+B** any of them to drop it from the run once you know which end of the dial you care about; bypass passes the input straight through and costs nothing.\n\nSeeds are fixed at **7**. Stability treats seed 0 as \"pick a random one\", which would make the three results incomparable and stop any of them being cached. With the seed pinned, the dial is the only thing that differs between them.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every `prompt` field in this graph \u2014 all three settings \u2014 and their `negative` too, so there is one\nplace to edit and the copies cannot drift apart. The comparison is only honest while every setting is reading the same words.\n\nIt emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
       ],
       "title": "Read me \u2014 control/style",
       "color": "#432",
@@ -126,6 +126,22 @@
           "type": "IMAGE",
           "link": 2,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 13,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 14,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -204,6 +220,22 @@
           "type": "IMAGE",
           "link": 4,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 15,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 16,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -282,6 +314,22 @@
           "type": "IMAGE",
           "link": 6,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 17,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 18,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -486,6 +534,54 @@
         false
       ],
       "title": "Three calls a run"
+    },
+    {
+      "id": 13,
+      "type": "SPSharedPrompt",
+      "pos": [
+        690,
+        720
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            13,
+            15,
+            17
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [
+            14,
+            16,
+            18
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        "photographic, 3d render, watermark, text"
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -583,6 +679,54 @@
       1,
       11,
       1,
+      "STRING"
+    ],
+    [
+      13,
+      13,
+      0,
+      4,
+      1,
+      "STRING"
+    ],
+    [
+      14,
+      13,
+      1,
+      4,
+      2,
+      "STRING"
+    ],
+    [
+      15,
+      13,
+      0,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      16,
+      13,
+      1,
+      6,
+      2,
+      "STRING"
+    ],
+    [
+      17,
+      13,
+      0,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      18,
+      13,
+      1,
+      8,
+      2,
       "STRING"
     ]
   ],

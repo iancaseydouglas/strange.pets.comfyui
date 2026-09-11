@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `flux2` |
-| Nodes | 10 |
-| Links | 8 |
+| Nodes | 11 |
+| Links | 12 |
 | Paid API calls per run | **4** |
 
 ---
@@ -27,6 +27,15 @@ Each branch writes its own filename prefix so the outputs stay tellable apart on
 - **Narrow** — name what must not change: *"same subject, same composition, same palette"*.
 - **Wide** — ask for the change: *"same subject, different time of day and camera angle"*.
 
+## The prompt lives in one node
+
+The **Shared Prompt** node feeds every `prompt` field in this graph — all four of them, so there is one
+place to edit and the copies cannot drift apart. Four copies of one prompt is four chances for one of them to say something slightly different, which would make the seeds no longer the only variable.
+
+It emits a plain string, **not** a list. That is the difference between it and **Prompt
+List**, which would make each node it feeds run once per line and multiply what the graph
+costs.
+
 ---
 
 ## Nodes in this graph
@@ -36,4 +45,5 @@ Each branch writes its own filename prefix so the outputs stay tellable apart on
 | `BFLFlux2Pro` | 4 |
 | `LoadImage` | 1 |
 | `MarkdownNote` | 1 |
+| `SPSharedPrompt` | 1 |
 | `SaveImage` | 4 |

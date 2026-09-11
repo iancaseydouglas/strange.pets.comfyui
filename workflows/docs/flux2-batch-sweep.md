@@ -7,8 +7,8 @@
 | | |
 | --- | --- |
 | Family | `flux2` |
-| Nodes | 3 |
-| Links | 1 |
+| Nodes | 4 |
+| Links | 2 |
 | Paid API calls per run | **a sweep** |
 | Reads | `example.png` |
 | Writes | `flux2_batch` |
@@ -39,6 +39,15 @@ This node loops the API for you and returns a **list** of images, so the Save Im
 ### Cost guard
 The batch refuses to exceed **100** API calls in one run — narrow the sweep or lower variations. Every image is one paid call.
 
+## The prompt lives in one node
+
+The **Shared Prompt** node feeds every `prompt` field in this graph, so there is one
+place to edit and the copies cannot drift apart — and a second sweep node added later reads the same words without you retyping them.
+
+It emits a plain string, **not** a list. That is the difference between it and **Prompt
+List**, which would make each node it feeds run once per line and multiply what the graph
+costs.
+
 ---
 
 ## Nodes in this graph
@@ -47,4 +56,5 @@ The batch refuses to exceed **100** API calls in one run — narrow the sweep or
 | --- | --- |
 | `BFLFlux2BatchVariations` | 1 |
 | `MarkdownNote` | 1 |
+| `SPSharedPrompt` | 1 |
 | `SaveImage` | 1 |

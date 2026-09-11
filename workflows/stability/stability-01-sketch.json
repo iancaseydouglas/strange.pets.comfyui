@@ -1,6 +1,6 @@
 {
-  "last_node_id": 12,
-  "last_link_id": 12,
+  "last_node_id": 13,
+  "last_link_id": 18,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "# 01 \u00b7 control/sketch\n\nTakes an image **read as line art** and renders a finished picture over it. It is the endpoint for the case where the drawing is right and nothing else is.\n\n## What it holds\n\nThe lines, and only the lines. Flat regions of your input carry almost nothing \u2014 this endpoint is looking for edges and treating everything between them as free space. Feed it a painted card and it will read the boundaries and discard the modelling.\n\nThat makes it the most *permissive* of the four: it will change palette, light, material and rendering completely while keeping the drawing underneath. If you want a card's composition and gesture but none of its current surface, this is the one.\n\n## The dial\n\n`control_strength` 0-1 is how tightly the result must follow those lines.\n\n- **0.3** \u2014 the lines are a suggestion. Expect the composition to move.\n- **0.6** \u2014 recognisably the same drawing, redrawn.\n- **0.9** \u2014 traced. Rigid, and it will keep line noise you would rather it dropped.\n\nAt high strength the quality of the *input* becomes the ceiling: a noisy edge map traced at 0.9 gives you a noisy result. Clean the input rather than lowering the dial.\n\n## Feeding it a photograph\n\nIf your source is a painting or a photo rather than a drawing, build the line map first: ComfyUI's **Canny** then **Invert Image** (Canny gives white-on-black; a sketch endpoint expects dark lines on light). That is what `workflows/stability-control-routing.json` wires up, and you can point this graph at its output folder instead.\n\n## Chaining these four\n\nThey all share one convention, and that is the whole mechanism \u2014 there is no workflow-calls-a-workflow in ComfyUI, so a folder is the join:\n\n```\nstability/in/              drop your sources here\nstability/out/sketch/      <- 01 writes here\nstability/out/structure/   <- 02\nstability/out/style/       <- 03\nstability/out/transfer/    <- 04\n```\n\nEvery one of these graphs reads **the newest image** in its `directory` (`sort_by = modified`, `descending`, `limit = 1`). So to feed one endpoint's output into another, change this graph's `directory` to that graph's output folder and run it. Structure reading `stability/out/sketch` is a two-step chain; nothing else needs rewiring.\n\nThe filename carries through: `Load Images From Directory` emits `filenames`, which is wired to the save node's `label`, so `the-fool.png` stays `the-fool.png` at every stage and you can always tell which source a result came from. `overwrite` is off, so a second run lands as `the-fool_1.png` rather than destroying the first \u2014 and \"newest by modified\" still picks it up.\n\nEach result gets a sidecar JSON with the prompt and settings that made it.\n\n## Cost\n\nEach of the three nodes below is **one paid call**, so a run is three. That is the point of a study graph \u2014 you are buying the comparison, not the image. **Ctrl+B** any of them to drop it from the run once you know which end of the dial you care about; bypass passes the input straight through and costs nothing.\n\nSeeds are fixed at **7**. Stability treats seed 0 as \"pick a random one\", which would make the three results incomparable and stop any of them being cached. With the seed pinned, the dial is the only thing that differs between them.\n"
+        "# 01 \u00b7 control/sketch\n\nTakes an image **read as line art** and renders a finished picture over it. It is the endpoint for the case where the drawing is right and nothing else is.\n\n## What it holds\n\nThe lines, and only the lines. Flat regions of your input carry almost nothing \u2014 this endpoint is looking for edges and treating everything between them as free space. Feed it a painted card and it will read the boundaries and discard the modelling.\n\nThat makes it the most *permissive* of the four: it will change palette, light, material and rendering completely while keeping the drawing underneath. If you want a card's composition and gesture but none of its current surface, this is the one.\n\n## The dial\n\n`control_strength` 0-1 is how tightly the result must follow those lines.\n\n- **0.3** \u2014 the lines are a suggestion. Expect the composition to move.\n- **0.6** \u2014 recognisably the same drawing, redrawn.\n- **0.9** \u2014 traced. Rigid, and it will keep line noise you would rather it dropped.\n\nAt high strength the quality of the *input* becomes the ceiling: a noisy edge map traced at 0.9 gives you a noisy result. Clean the input rather than lowering the dial.\n\n## Feeding it a photograph\n\nIf your source is a painting or a photo rather than a drawing, build the line map first: ComfyUI's **Canny** then **Invert Image** (Canny gives white-on-black; a sketch endpoint expects dark lines on light). That is what `workflows/stability-control-routing.json` wires up, and you can point this graph at its output folder instead.\n\n## Chaining these four\n\nThey all share one convention, and that is the whole mechanism \u2014 there is no workflow-calls-a-workflow in ComfyUI, so a folder is the join:\n\n```\nstability/in/              drop your sources here\nstability/out/sketch/      <- 01 writes here\nstability/out/structure/   <- 02\nstability/out/style/       <- 03\nstability/out/transfer/    <- 04\n```\n\nEvery one of these graphs reads **the newest image** in its `directory` (`sort_by = modified`, `descending`, `limit = 1`). So to feed one endpoint's output into another, change this graph's `directory` to that graph's output folder and run it. Structure reading `stability/out/sketch` is a two-step chain; nothing else needs rewiring.\n\nThe filename carries through: `Load Images From Directory` emits `filenames`, which is wired to the save node's `label`, so `the-fool.png` stays `the-fool.png` at every stage and you can always tell which source a result came from. `overwrite` is off, so a second run lands as `the-fool_1.png` rather than destroying the first \u2014 and \"newest by modified\" still picks it up.\n\nEach result gets a sidecar JSON with the prompt and settings that made it.\n\n## Cost\n\nEach of the three nodes below is **one paid call**, so a run is three. That is the point of a study graph \u2014 you are buying the comparison, not the image. **Ctrl+B** any of them to drop it from the run once you know which end of the dial you care about; bypass passes the input straight through and costs nothing.\n\nSeeds are fixed at **7**. Stability treats seed 0 as \"pick a random one\", which would make the three results incomparable and stop any of them being cached. With the seed pinned, the dial is the only thing that differs between them.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every `prompt` field in this graph \u2014 all three settings \u2014 and their `negative` too, so there is one\nplace to edit and the copies cannot drift apart. The comparison is only honest while every setting is reading the same words.\n\nIt emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
       ],
       "title": "Read me \u2014 control/sketch",
       "color": "#432",
@@ -126,6 +126,22 @@
           "type": "IMAGE",
           "link": 2,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 13,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 14,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -203,6 +219,22 @@
           "type": "IMAGE",
           "link": 4,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 15,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 16,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -280,6 +312,22 @@
           "type": "IMAGE",
           "link": 6,
           "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 17,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "link": 18,
+          "widget": {
+            "name": "negative_prompt"
+          }
         }
       ],
       "outputs": [
@@ -483,6 +531,54 @@
         false
       ],
       "title": "Three calls a run"
+    },
+    {
+      "id": 13,
+      "type": "SPSharedPrompt",
+      "pos": [
+        690,
+        720
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            13,
+            15,
+            17
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [
+            14,
+            16,
+            18
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "A tarot card illustration: gold ink on deep indigo, engraved linework, candlelit, symbolist. Full bleed, no border, no lettering.",
+        "photographic, 3d render, watermark, text"
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -580,6 +676,54 @@
       1,
       11,
       1,
+      "STRING"
+    ],
+    [
+      13,
+      13,
+      0,
+      4,
+      1,
+      "STRING"
+    ],
+    [
+      14,
+      13,
+      1,
+      4,
+      2,
+      "STRING"
+    ],
+    [
+      15,
+      13,
+      0,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      16,
+      13,
+      1,
+      6,
+      2,
+      "STRING"
+    ],
+    [
+      17,
+      13,
+      0,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      18,
+      13,
+      1,
+      8,
+      2,
       "STRING"
     ]
   ],
