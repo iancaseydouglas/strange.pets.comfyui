@@ -51,8 +51,8 @@ Python that runs ComfyUI:
 
 ```bash
 cd <ComfyUI>/custom_nodes
-git clone <this repo> comfyui-flux2-bfl
-pip install -r comfyui-flux2-bfl/requirements.txt
+git clone https://github.com/iancaseydouglas/strange.pets.comfyui.git strange.pets.comfyui
+pip install -r strange.pets.comfyui/requirements.txt
 ```
 
 `custom_nodes` for ComfyUI Desktop is:
@@ -250,7 +250,6 @@ image:
 | `tarot-structure-fidelity.json` | The same structure held three ways, so you can see what each dial costs: Canny thresholds decide how much structure exists, `guidance` decides how hard it is followed (swept 2→8 onto a contact sheet), and Stability's `control_strength` does it without an edge map at all. |
 | `tarot-variation-sweep.json` | Two sweeps off one image on the same fixed seed — `guidance` and `steps` — each landing on its own labelled contact sheet, with the cost report beside them. |
 | `tarot-generate-and-edit.json` | A chain you sit inside: generate, then edit, then edit again, each stage taking the last result back in. Fixed seeds make every upstream stage a cache hit, so revising stage three costs only stage three. |
-| `tarot-deck-pipeline.json` | The whole thing. Manifest → slot loader → per-card prompts → generate → frame → lettering → save, plus a contact sheet of the finished deck. |
 | `tarot-01-generate.json` | **Stage 1 of 2.** Everything up to and including the paid calls: deck, cascade, resolve, generate. Ends by writing raw unframed art to `tarot/derived-art/` and the deck definition to `tarot/deck.json`. |
 | `tarot-02-assemble.json` | **Stage 2 of 2.** Picks up those two files and makes finished cards — frame, lettering, save, contact sheet, cohesion report. **No API calls at all**, so iterating on a border is free. |
 | `tarot-deck-derive.json` | The same work in one graph, when you want it end to end. A deck derived from a deck: the full style cascade — invariants, a locked style, scoped layers over subsets, the fidelity vector — resolved per card, generated, assembled, saved and measured. Starts on the 12-card proof set. |
@@ -487,7 +486,7 @@ vendor-neutral — the generate step in the middle can be any node in this pack,
 | Tarot Card Frame | Trim size, DPI, bleed, margins and a border — the card as a printable object |
 | Tarot Card Lettering | The name and numeral, with real letter-spacing |
 
-`workflows/tarot/tarot-deck-pipeline.json` wires all five together and carries a long note.
+`workflows/tarot/tarot-deck-derive.json` wires the manifest, slot loader, frame and lettering together, with the style cascade standing in for the prompt builder.
 
 ### Tarot Deck Manifest
 
@@ -525,7 +524,7 @@ later on. **Space is AND, a comma is OR, `!` negates one term.**
 
 Terms are groups (`all`, `majors`, `minors`, `courts`, `pips`, `aces`), suit names, `suit1`…`suitN`
 by position, rank names, elements, card slugs, and numbers. The positional `suitN` forms keep a
-selector working after you rename Wands to Lanterns.
+selector working after you rename Wands to Keys.
 
 An unrecognised term **raises**, naming what it would accept, rather than matching nothing —
 because a silent no-match is the expensive failure. A mistyped suit means that suit quietly
@@ -557,12 +556,12 @@ Every name and every position lives in one JSON object, and `definition_path` lo
 
 ```json
 {
-  "name": "Tarot of the Hidden Light",
-  "majors": ["The Unlit Lamp", "The Magician", "…"],
-  "suits": [{"name": "Lanterns", "element": "Fire"},
-            {"name": "Vessels",  "element": "Water"}],
+  "name": "Tarot of Night's Splendor",
+  "majors": ["The Wanderer", "The Magician", "…"],
+  "suits": [{"name": "Keys",  "element": "Fire"},
+            {"name": "Wells", "element": "Water"}],
   "pips": ["Ace", "Two", "…", "Ten"],
-  "courts": ["Seeker", "Rider", "Mother", "Elder"],
+  "courts": ["Novice", "Herald", "Matriarch", "Patriarch"],
   "major_element": "Spirit"
 }
 ```
@@ -589,9 +588,9 @@ hand — a slug, an index, a code, or the card's current title:
 ```
 temperance         = Art
 21                 = The Aeon
-major-16           = The Lightning House
-The High Priestess = The Veiled One
-king-of-wands      = Elder of Lanterns
+major-16           = The Broken Spire
+The High Priestess = The Oracle
+king-of-wands      = Patriarch of Keys
 ```
 
 **A rename does not break what you have already written about that card.** `slug` follows
@@ -609,7 +608,7 @@ has nowhere to live in a suit × rank grid, so it is written to a `renames` bloc
 code and applied when the definition loads:
 
 ```json
-"renames": { "wands-14": "Elder of Lanterns" }
+"renames": { "wands-14": "Patriarch of Keys" }
 ```
 
 An unknown rename target raises and says what it would accept, rather than being ignored.
@@ -773,7 +772,7 @@ re-assembles from its two folders with no cascade, no keys and no cost.
 
 Renaming a card survives the crossing: the saved definition carries an `aliases` map of each
 renamed card's original slug, so a constraint or selector written against `the-tower` still
-resolves in the stage that only ever saw "The Lightning House".
+resolves in the stage that only ever saw "The Broken Spire".
 
 ### Read the report
 

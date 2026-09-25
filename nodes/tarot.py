@@ -757,7 +757,7 @@ class TarotDeck:
                 "suit_names": ("STRING", {
                     "default": "",
                     "tooltip": "Four comma-separated names to replace the tradition's suits, "
-                               "e.g. Lanterns, Vessels, Blades, Stones. Blank keeps the default.",
+                               "e.g. Keys, Wells, Blades, Stones. Blank keeps the default.",
                 }),
                 "court_names": ("STRING", {
                     "default": "",
