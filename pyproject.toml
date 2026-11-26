@@ -1,0 +1,16 @@
+[project]
+name = "strange-pets-comfyui"
+version = "0.1.0"
+description = "ComfyUI custom nodes for the Black Forest Labs FLUX.2 / FLUX 3 and Stability AI image APIs."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pillow",
+    "requests",
+    "torch",
+]
+
+[tool.uv]
+package = false

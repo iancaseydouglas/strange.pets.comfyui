@@ -8,6 +8,8 @@ const IMAGE_LIMITS = {
     BFLFlux2Flex: 8,
     BFLFlux2Klein9B: 4,
     BFLFlux2Klein4B: 4,
+    BFLFlux3Image: 10,
+    BFLFlux3ImageKlein: 10,
 };
 
 function chainCallback(object, property, callback) {

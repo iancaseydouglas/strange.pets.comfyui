@@ -161,6 +161,10 @@ def submit_task(endpoint, payload, api_key):
 
 
 def poll_task(task_id, polling_url, api_key):
+    return poll_result(task_id, polling_url, api_key)["sample"]
+
+
+def poll_result(task_id, polling_url, api_key):
     params = None if "id=" in polling_url else {"id": task_id}
     deadline = time.monotonic() + POLL_TIMEOUT
     last_status = "Pending"
@@ -198,7 +202,7 @@ def poll_task(task_id, polling_url, api_key):
                 raise BFLApiError(
                     "Task {} is Ready but carries no result URL: {}".format(task_id, json.dumps(result)[:500])
                 )
-            return sample
+            return result
 
         if last_status in IN_PROGRESS_STATUSES:
             if time.monotonic() >= deadline:

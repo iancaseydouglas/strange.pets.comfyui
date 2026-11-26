@@ -28,14 +28,15 @@ DOCS = os.path.join(WORKFLOWS, "docs")
 
 FAMILIES = [
     ("flux2", "FLUX.2", "Black Forest Labs endpoints, one image at a time."),
+    ("flux3", "FLUX 3", "FLUX 3 Image and Klein: generation, instruction edits, multi-reference, and bounding-box layouts."),
     ("stability", "Stability", "The control endpoints, each studied alone, chained through folders."),
     ("tarot", "Tarot", "Deck-shaped work: whole runs, staged runs, and single-card technique studies."),
 ]
 
 # Nodes that spend money. One call each per execution, except the sweep node, which makes
 # as many as its grid comes to.
-PAID_PREFIXES = ("BFLFlux2", "StabAI")
-FREE_EXCEPTIONS = {"BFLFlux2LoadImageFromPath"}
+PAID_PREFIXES = ("BFLFlux2", "BFLFlux3", "StabAI")
+FREE_EXCEPTIONS = {"BFLFlux2LoadImageFromPath", "BFLFlux3BoxElement", "BFLFlux3LayoutPrompt"}
 VARIABLE_COST = {"BFLFlux2BatchVariations"}
 
 READ_WIDGETS = ("directory", "input_path", "anchor_dir", "definition_path", "load_from",
@@ -65,7 +66,7 @@ def node_meta():
         return None
 
     meta = {}
-    opaque = {"IMAGE", "MASK", "TAROT_DECK", "TAROT_STYLE", "TAROT_RULES"}
+    opaque = {"IMAGE", "MASK", "FLUX3_BOXES", "TAROT_DECK", "TAROT_STYLE", "TAROT_RULES"}
     for key, cls in pack.NODE_CLASS_MAPPINGS.items():
         try:
             spec_ = cls.INPUT_TYPES()
@@ -81,7 +82,7 @@ def node_meta():
                     continue
                 else:
                     row.append(name)
-                    if name in ("seed", "noise_seed") and kind == "INT":
+                    if kind == "INT" and (name in ("seed", "noise_seed") or options.get("control_after_generate")):
                         row.append("control_after_generate")
         flags = getattr(cls, "OUTPUT_IS_LIST", ())
         meta[key] = {
@@ -300,7 +301,7 @@ def index_for(entries, feeds, fed_by):
 
     out += ["## Adding one", "",
             "1. Drop the `.json` into the family folder it belongs to — `flux2/`, "
-            "`stability/` or `tarot/`.",
+            "`flux3/`, `stability/` or `tarot/`.",
             "2. Give it a **MarkdownNote** whose first heading is its title and whose first "
             "paragraph says what it does in a sentence. That note becomes its documentation.",
             "3. Run `python tools/workflow_docs.py`.", "",

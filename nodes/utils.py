@@ -252,7 +252,8 @@ def redact_api_keys(payload, node_class_mappings):
         names = []
         for name, spec in required.items():
             names.append(name)
-            if name in ("seed", "noise_seed") and spec[0] == "INT":
+            options = spec[1] if len(spec) > 1 and isinstance(spec[1], dict) else {}
+            if spec[0] == "INT" and (name in ("seed", "noise_seed") or options.get("control_after_generate")):
                 names.append("control_after_generate")
         return names
 

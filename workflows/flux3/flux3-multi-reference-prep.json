@@ -1,0 +1,774 @@
+{
+  "last_node_id": 15,
+  "last_link_id": 16,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -480,
+        40
+      ],
+      "size": [
+        420,
+        760
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## FLUX 3 multi-reference, prepared\n\nThree references normalised to a sensible size, checked in order on a contact strip, then sent to FLUX 3 Image together \u2014 so nothing is rejected for size and nothing arrives in the wrong slot.\n\n**Scale Image to Total Pixels** (core) brings each reference to **1.0 MP** with lanczos. The API refuses a reference over 16 MP and one under 256 \u00d7 256, and a phone photo uploaded at full size just makes the call slower. Raise `megapixels` for image 1 if the output should keep more of its detail \u2014 its frame sets the output's.\n\n**Stitch Images** (core) lays the three out left to right in socket order, labelled nothing but order itself: the leftmost is *image 1*. Check it before you spend \u2014 the prompt refers to the references by number, so a swapped Load Image is a different request.\n\n**Image Comparer** sets the room (image 1) against the result.\n\nConnect more references and more sockets appear on the FLUX 3 node, up to 10; extend the stitch chain to match.\n\n### Needs\n[rgthree-comfy](https://github.com/rgthree/rgthree-comfy). **Manager \u2192 Install Missing Custom Nodes** finds it if the graph loads with red nodes.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every FLUX 3 `prompt` in this graph, so there is one\nplace to edit it. It emits a plain string, **not** a list, so each node it feeds still runs once."
+      ],
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        40
+      ],
+      "size": [
+        300,
+        330
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Image 1 \u2014 the room"
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        440
+      ],
+      "size": [
+        300,
+        330
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Image 2 \u2014 bed"
+    },
+    {
+      "id": 4,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        840
+      ],
+      "size": [
+        300,
+        330
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Image 3 \u2014 carpet"
+    },
+    {
+      "id": 5,
+      "type": "ImageScaleToTotalPixels",
+      "pos": [
+        340,
+        40
+      ],
+      "size": [
+        300,
+        130
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            4,
+            9,
+            13
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageScaleToTotalPixels"
+      },
+      "widgets_values": [
+        "lanczos",
+        1.0,
+        1
+      ],
+      "title": "Scale ref 1"
+    },
+    {
+      "id": 6,
+      "type": "ImageScaleToTotalPixels",
+      "pos": [
+        340,
+        440
+      ],
+      "size": [
+        300,
+        130
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5,
+            10
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageScaleToTotalPixels"
+      },
+      "widgets_values": [
+        "lanczos",
+        1.0,
+        1
+      ],
+      "title": "Scale ref 2"
+    },
+    {
+      "id": 7,
+      "type": "ImageScaleToTotalPixels",
+      "pos": [
+        340,
+        840
+      ],
+      "size": [
+        300,
+        130
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            7,
+            11
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageScaleToTotalPixels"
+      },
+      "widgets_values": [
+        "lanczos",
+        1.0,
+        1
+      ],
+      "title": "Scale ref 3"
+    },
+    {
+      "id": 8,
+      "type": "ImageStitch",
+      "pos": [
+        340,
+        1240
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "image2",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageStitch"
+      },
+      "widgets_values": [
+        "right",
+        true,
+        16,
+        "white"
+      ],
+      "title": "Strip 1+2"
+    },
+    {
+      "id": 9,
+      "type": "ImageStitch",
+      "pos": [
+        340,
+        1460
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": 6
+        },
+        {
+          "name": "image2",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageStitch"
+      },
+      "widgets_values": [
+        "right",
+        true,
+        16,
+        "white"
+      ],
+      "title": "Strip (1+2)+3"
+    },
+    {
+      "id": 10,
+      "type": "PreviewImage",
+      "pos": [
+        680,
+        1240
+      ],
+      "size": [
+        700,
+        320
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Reference order \u2014 left is image 1"
+    },
+    {
+      "id": 11,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -480,
+        840
+      ],
+      "size": [
+        400,
+        280
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            12
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Furnish the exact room in image 1 with the bed from image 2 against the left wall and the carpet from image 3 on the floor. Keep the walls, windows, floor and lighting of image 1 unchanged.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 12,
+      "type": "BFLFlux3Image",
+      "pos": [
+        700,
+        40
+      ],
+      "size": [
+        420,
+        560
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 9
+        },
+        {
+          "name": "input_image_2",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 10
+        },
+        {
+          "name": "input_image_3",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 11
+        },
+        {
+          "name": "input_image_4",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            14,
+            15
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [
+            16
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "Furnish the exact room in image 1 with the bed from image 2 against the left wall and the carpet from image 3 on the floor. Keep the walls, windows, floor and lighting of image 1 unchanged.",
+        "auto",
+        "1k",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "FLUX 3 Image \u2014 multi-reference"
+    },
+    {
+      "id": 13,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        1160,
+        40
+      ],
+      "size": [
+        520,
+        520
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_a",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 13
+        },
+        {
+          "name": "image_b",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Image Comparer (rgthree)",
+        "comparer_mode": "Slide"
+      },
+      "widgets_values": [],
+      "title": "Room \u2194 furnished"
+    },
+    {
+      "id": 14,
+      "type": "SaveImage",
+      "pos": [
+        1720,
+        40
+      ],
+      "size": [
+        420,
+        460
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 15
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/multi_reference"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "Display Any (rgthree)",
+      "pos": [
+        700,
+        640
+      ],
+      "size": [
+        420,
+        240
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 16
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Display Any (rgthree)"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Expanded prompt"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      4,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      5,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      6,
+      0,
+      8,
+      1,
+      "IMAGE"
+    ],
+    [
+      6,
+      8,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      7,
+      0,
+      9,
+      1,
+      "IMAGE"
+    ],
+    [
+      8,
+      9,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      5,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      6,
+      0,
+      12,
+      1,
+      "IMAGE"
+    ],
+    [
+      11,
+      7,
+      0,
+      12,
+      2,
+      "IMAGE"
+    ],
+    [
+      12,
+      11,
+      0,
+      12,
+      4,
+      "STRING"
+    ],
+    [
+      13,
+      5,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      14,
+      12,
+      0,
+      13,
+      1,
+      "IMAGE"
+    ],
+    [
+      15,
+      12,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      12,
+      1,
+      15,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        520,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

@@ -5,6 +5,8 @@ local graph alongside `SaveImage`, `PreviewImage`, or another edit node. Two API
 
 - **[Black Forest Labs](https://api.bfl.ai) FLUX.2** — pro, max, flex and klein, plus a
   batch/sweep node. 7 nodes.
+- **[Black Forest Labs](https://api.bfl.ai) FLUX 3 Image** — FLUX 3 Image and FLUX 3 Image
+  Klein, plus two free nodes that build bounding-box layout prompts. 4 nodes.
 - **[Stability AI](https://api.stability.ai) Stable Image (v2beta)** — Generate, Edit,
   Upscale and Control. 17 nodes.
 - **Utilities** — aspect ratios, endpoint-limit fitting, directory load/save with filename
@@ -19,8 +21,8 @@ Everything is generated against the official OpenAPI descriptions shipped alongs
 code (`bfl_openapi.json` and `stability-openapi.json`) — endpoint paths, field names,
 ranges and defaults all come from those documents rather than from memory.
 
-All 48 nodes are categorised under **strange-pets/** in the node browser, sub-grouped by
-vendor (`strange-pets/BFL/FLUX.2`, `strange-pets/StabAI/Generate`, and so on).
+All 52 nodes are categorised under **strange-pets/** in the node browser, sub-grouped by
+vendor (`strange-pets/BFL/FLUX.2`, `strange-pets/BFL/FLUX 3`, `strange-pets/StabAI/Generate`, and so on).
 
 ## FLUX.2 nodes (BFL)
 
@@ -44,6 +46,33 @@ They all live under the **strange-pets/BFL/FLUX.2** category.
 The klein schema (`Flux2KleinInputs`) defines neither `disable_pup` nor
 `prompt_upsampling`, so those nodes deliberately have no upsampling widget.
 
+## FLUX 3 nodes (BFL)
+
+| Node | Endpoint | Reference images | Widgets |
+| --- | --- | --- | --- |
+| FLUX 3 Image (BFL API) | `/v1/flux-3-image` | up to 10 | `prompt`, `aspect_ratio` (`auto` + 15 ratios), `resolution` (`768sq`–`4k`, `match_input`), `width`/`height` (256–6256), `safety_tolerance` (0–7), `grounding`, `version`, `user` |
+| FLUX 3 Image Klein (BFL API) | `/v1/flux-3-image-klein` | up to 10 | `prompt`, `aspect_ratio`, `resolution` (`default`, `768sq`–`4k`), `width`/`height` (64–6256), `seed`, `steps` (1–16), `safety_tolerance` (0–7), `output_format` (jpeg/png), `user` |
+| FLUX 3 Box Element | — | — | One row of an element table: `layout`, or an edit row `keep` / `move` / `new` / `remove`, on the 0–1000 `[top, left, bottom, right]` grid. Chains. |
+| FLUX 3 Layout Prompt | — | — | Joins a caption or edit instruction with the rows (wired, or pasted as `rows_json`) into the one `prompt` string FLUX 3 reads boxes from. |
+
+Every field in `Flux3ImageInputs` and `Flux3ImageKleinInputs` is a widget. Both schemas take
+references as one `images` array, so the sockets grow from `input_image` to
+`input_image_10` and are sent in socket order; `image_urls` adds http(s) URLs or base64,
+one per line, after them. Both generation nodes output `image` and `expanded_prompt`, the
+`result.prompt` the model actually ran after expanding yours, including any boxes it
+added to an edit.
+
+`flux-3-image` has no `seed`. Its `variation` widget is never sent: it only decides whether
+ComfyUI and the result cache may reuse the last image, so change it for a fresh take. Neither
+schema has webhook, negative-prompt or prompt-upsampling fields. The Box and Layout nodes
+make no API call.
+
+Five of the `workflows/flux3/` graphs also use third-party utility nodes —
+`flux3-edit-before-after`, `flux3-edit-chain` and `flux3-multi-reference-prep` need
+[rgthree-comfy](https://github.com/rgthree/rgthree-comfy); `flux3-image-vs-klein` and
+`flux3-klein-seed-sweep` need it and [Use Everywhere](https://github.com/chrisgoringe/cg-use-everywhere).
+ComfyUI Manager's *Install Missing Custom Nodes* picks both up.
+
 ## Install
 
 Clone into ComfyUI's `custom_nodes` directory and install the dependencies with the same
@@ -54,6 +83,17 @@ cd <ComfyUI>/custom_nodes
 git clone https://github.com/iancaseydouglas/strange.pets.comfyui.git strange.pets.comfyui
 pip install -r strange.pets.comfyui/requirements.txt
 ```
+
+With uv, install into ComfyUI's own environment rather than a new one, so it reuses the
+torch ComfyUI already has:
+
+```bash
+uv pip install --python <path to ComfyUI's python> -r strange.pets.comfyui/requirements.txt
+```
+
+`pyproject.toml` lists the same four dependencies. `uv sync` inside the pack builds a
+separate `.venv`, which is only useful for running `tools/workflow_docs.py` outside
+ComfyUI. ComfyUI does not load nodes from that venv.
 
 `custom_nodes` for ComfyUI Desktop is:
 

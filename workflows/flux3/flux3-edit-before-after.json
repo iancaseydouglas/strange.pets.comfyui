@@ -1,0 +1,346 @@
+{
+  "last_node_id": 7,
+  "last_link_id": 6,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -480,
+        40
+      ],
+      "size": [
+        420,
+        640
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## FLUX 3 edit, before and after\n\nOne instruction edit with the source and the result laid over each other, so you judge what changed by sliding across it rather than by flicking between two previews.\n\n**Image Comparer** (rgthree) takes the original as `image_a` and the edit as `image_b`. Hover and drag across it; set its `comparer_mode` property to *Click* if you prefer toggling.\n\n`resolution` is **match_input**, so both sides are the same size and line up pixel for pixel \u2014 which is what makes the slider honest. Pixels outside the edited element should not move; where they do (shadows, reflections, nearby light), the slider shows it.\n\n**Display Any** (rgthree) shows `expanded_prompt`: how FLUX 3 rewrote the instruction, and the boxes it drew around what it decided to change. If it picked the wrong thing, copy those rows into **flux3-box-edit**.\n\n`variation` is fixed, so re-running with nothing changed costs nothing.\n\n### Needs\n[rgthree-comfy](https://github.com/rgthree/rgthree-comfy). **Manager \u2192 Install Missing Custom Nodes** finds it if the graph loads with red nodes.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every FLUX 3 `prompt` in this graph, so there is one\nplace to edit it. It emits a plain string, **not** a list, so each node it feeds still runs once."
+      ],
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        40
+      ],
+      "size": [
+        300,
+        330
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1,
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Before"
+    },
+    {
+      "id": 3,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -480,
+        720
+      ],
+      "size": [
+        400,
+        280
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Change the owl's brown and tan mottled feathers to snowy white and charcoal grey, keeping its bright yellow eyes. Keep everything else \u2014 composition, lighting, background \u2014 exactly unchanged.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 4,
+      "type": "BFLFlux3Image",
+      "pos": [
+        360,
+        40
+      ],
+      "size": [
+        420,
+        560
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 1
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            4,
+            5
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [
+            6
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "Change the owl's brown and tan mottled feathers to snowy white and charcoal grey, keeping its bright yellow eyes. Keep everything else \u2014 composition, lighting, background \u2014 exactly unchanged.",
+        "auto",
+        "match_input",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "FLUX 3 Image \u2014 edit"
+    },
+    {
+      "id": 5,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        820,
+        40
+      ],
+      "size": [
+        520,
+        520
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_a",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 3
+        },
+        {
+          "name": "image_b",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Image Comparer (rgthree)",
+        "comparer_mode": "Slide"
+      },
+      "widgets_values": [],
+      "title": "Before \u2194 after"
+    },
+    {
+      "id": 6,
+      "type": "SaveImage",
+      "pos": [
+        1380,
+        40
+      ],
+      "size": [
+        420,
+        460
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/before_after"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "Display Any (rgthree)",
+      "pos": [
+        360,
+        640
+      ],
+      "size": [
+        420,
+        240
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 6
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Display Any (rgthree)"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Expanded prompt"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      1,
+      "STRING"
+    ],
+    [
+      3,
+      2,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      4,
+      0,
+      5,
+      1,
+      "IMAGE"
+    ],
+    [
+      5,
+      4,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      4,
+      1,
+      7,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        520,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

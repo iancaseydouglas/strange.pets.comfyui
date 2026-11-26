@@ -380,6 +380,15 @@ def cache_get(key):
         return None
 
 
+def cache_get_meta(key):
+    _, meta_path = _cache_paths(key)
+    try:
+        with open(meta_path) as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return {}
+
+
 def cache_put(key, image, meta):
     image_path, meta_path = _cache_paths(key)
     try:

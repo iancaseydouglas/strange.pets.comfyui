@@ -1,0 +1,409 @@
+{
+  "last_node_id": 8,
+  "last_link_id": 6,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -460,
+        40
+      ],
+      "size": [
+        400,
+        600
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## FLUX 3 layout with boxes\n\nPlace every element yourself: a caption that names each element as `<id>`, plus one box per element, joined into the single prompt string FLUX 3 reads layouts from.\n\nBoxes are **[top, left, bottom, right]** on a **0\u20131000** grid from the top-left corner. `[0, 0, 500, 500]` is the top-left quarter whatever the frame, because the grid stretches with it \u2014 so `aspect_ratio` here is **1:1**, the shape the boxes were drawn for.\n\nEach **Box Element** adds one row and passes the table on; chain as many as you need. **Layout Prompt** joins the caption and the table, and prints a warning if a row's id never appears in the caption. Its `rows_json` takes a pasted JSON array too, such as one copied from the BFL docs.\n\nBoxes guide placement, they do not clip. Give text its own box and quote the words in `desc`. A box of roughly 40 \u00d7 25 pixels is often too small for a new element to appear.\n\nThe Box and Layout nodes are free; only the FLUX 3 node is billed.\n\n`variation` is not sent to the API \u2014 flux-3-image has no seed. It is **fixed** here so a rerun with nothing changed costs nothing; bump it (or set it to *randomize*) for a fresh take. `expanded_prompt` is `result.prompt`, the prompt the model actually used after expanding yours.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds the prompt in this graph, so there is one\nplace to edit it. It emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
+      ],
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        -460,
+        700
+      ],
+      "size": [
+        340,
+        420
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "background_1",
+        "layout",
+        0,
+        0,
+        1000,
+        1000,
+        "A flat field of neon yellow-green with a subtle paper texture and fine, organic grain.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "Box \u2014 background_1 (layout)"
+    },
+    {
+      "id": 3,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        -80,
+        700
+      ],
+      "size": [
+        340,
+        420
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "silhouette_1",
+        "layout",
+        150,
+        150,
+        850,
+        850,
+        "A black silhouette of a person in motion, made of dense stippled ink. The leading edges are solid; the trailing arm and leg dissolve into coarse square pixels and scattered dots.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "Box \u2014 silhouette_1 (layout)"
+    },
+    {
+      "id": 4,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -80,
+        1160
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Minimalist graphic illustration featuring a black silhouette of a person <silhouette_1> centered against a solid, vibrant chartreuse background <background_1>. The figure is captured in a dynamic, mid-stride running pose, facing toward the left side of the frame.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 5,
+      "type": "BFLFlux3LayoutPrompt",
+      "pos": [
+        -80,
+        380
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "link": 2,
+          "shape": 7
+        },
+        {
+          "name": "caption",
+          "type": "STRING",
+          "link": 3,
+          "widget": {
+            "name": "caption"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3LayoutPrompt"
+      },
+      "widgets_values": [
+        "Minimalist graphic illustration featuring a black silhouette of a person <silhouette_1> centered against a solid, vibrant chartreuse background <background_1>. The figure is captured in a dynamic, mid-stride running pose, facing toward the left side of the frame.",
+        ""
+      ]
+    },
+    {
+      "id": 6,
+      "type": "BFLFlux3Image",
+      "pos": [
+        400,
+        60
+      ],
+      "size": [
+        430,
+        560
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 4,
+          "widget": {
+            "name": "prompt"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            5
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [
+            6
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "Minimalist graphic illustration featuring a black silhouette of a person <silhouette_1> centered against a solid, vibrant chartreuse background <background_1>. The figure is captured in a dynamic, mid-stride running pose, facing toward the left side of the frame.",
+        "1:1",
+        "1k",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "FLUX 3 Image \u2014 layout"
+    },
+    {
+      "id": 7,
+      "type": "SaveImage",
+      "pos": [
+        900,
+        60
+      ],
+      "size": [
+        480,
+        500
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/layout"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "PreviewAny",
+      "pos": [
+        900,
+        600
+      ],
+      "size": [
+        480,
+        260
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 6
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "Expanded prompt"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      2,
+      3,
+      0,
+      5,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      3,
+      4,
+      0,
+      5,
+      1,
+      "STRING"
+    ],
+    [
+      4,
+      5,
+      0,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      5,
+      6,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      6,
+      1,
+      8,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        480,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}

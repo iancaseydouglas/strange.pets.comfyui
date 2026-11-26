@@ -1,5 +1,7 @@
 from .nodes.batch import Flux2BatchVariations, Flux2LoadImageFromPath
 from .nodes.flux2 import Flux2Flex, Flux2Klein4B, Flux2Klein9B, Flux2Max, Flux2Pro
+from .nodes.flux3 import NODE_CLASS_MAPPINGS as FLUX3_CLASSES
+from .nodes.flux3 import NODE_DISPLAY_NAME_MAPPINGS as FLUX3_NAMES
 from .nodes.stability import NODE_CLASS_MAPPINGS as STABILITY_CLASSES
 from .nodes.stability import NODE_DISPLAY_NAME_MAPPINGS as STABILITY_NAMES
 from .nodes.tarot import NODE_CLASS_MAPPINGS as TAROT_CLASSES
@@ -29,6 +31,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BFLFlux2BatchVariations": "FLUX.2 Batch / Sweep (BFL API)",
 }
 
+NODE_CLASS_MAPPINGS.update(FLUX3_CLASSES)
+NODE_DISPLAY_NAME_MAPPINGS.update(FLUX3_NAMES)
 NODE_CLASS_MAPPINGS.update(STABILITY_CLASSES)
 NODE_DISPLAY_NAME_MAPPINGS.update(STABILITY_NAMES)
 NODE_CLASS_MAPPINGS.update(UTIL_CLASSES)

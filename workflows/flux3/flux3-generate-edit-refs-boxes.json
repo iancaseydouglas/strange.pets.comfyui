@@ -1,0 +1,1413 @@
+{
+  "last_node_id": 26,
+  "last_link_id": 22,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -500,
+        40
+      ],
+      "size": [
+        440,
+        1080
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## FLUX 3 generate, then edit \u2014 optional references, bounding boxes\n\nLay out a new image with boxes, optionally pulling an element from a reference photo, then edit that image box by box, optionally placing something from a second reference. Every reference and every box is a switch, so the same graph runs as plain text-to-image or as a full multi-reference composite.\n\n### Stage 1 \u2014 generate\nA caption from the **Shared Prompt** plus layout rows for `background_1` and `table_1`, joined by **Layout Prompt**. `aspect_ratio` is fixed at **4:5**, the shape the boxes are drawn for. It is deliberately not `auto`, so switching a reference on never changes the frame.\n\n**Bottle source** (always one) chooses where `bottle_1` comes from:\n- **Bottle \u00b7 generated from desc** \u2014 a `layout` row; the model invents the bottle from its `desc`.\n- **Bottle \u00b7 from reference image** \u2014 a Load Image plus a row with `from: ref_image_0` whose `src_bbox` marks the bottle in your photo and whose `tgt_bbox` places it in the layout. Measure `src_bbox` on your photo; it is `[0, 0, 1000, 1000]` here, a product shot that fills its frame.\n\n### Stage 2 \u2014 edit\nStage 1's image becomes **image 1** (`ref_image_0`). **Keep** rows anchor the backdrop, table and bottle; the instruction is a core **Text (Multiline)** node. `resolution` is **match_input**, so the edit stays at stage 1's size.\n\n**Label source** (always one) chooses the new `label_1`:\n- **Label \u00b7 written text** \u2014 a `new` row: text reading \"NORTH\", generated in the box.\n- **Label \u00b7 logo from reference** \u2014 a Load Image on `input_image_2` (**image 2**, `ref_image_1`) plus a row taking the logo from it into the label box.\n\n**Edit stage** switches stage 2 off entirely while you settle the layout. Bypassed, it passes stage 1's image through, so its Save writes a copy of stage 1.\n\n### How the switches work\nA bypassed **Load Image** sends nothing, so that socket is simply left out of the request. A bypassed **Box Element** passes the rows above it through untouched, so its row drops out of the table. Both reference groups start **bypassed**, so the graph runs with no images at all.\n\nReferences are numbered by the sockets that are actually connected. Stage 2's logo is image 2 only because stage 1's result fills socket 1. If you rewire, renumber the `ref_image` on the rows to match.\n\n**Image Comparer** sets stage 1 against stage 2; each stage's **Display Any** shows the prompt FLUX 3 actually ran, boxes included.\n\n### Cost\n2 FLUX 3 Image calls, or 1 with Edit stage off. `variation` is fixed on both, so changing only stage 2 never re-bills stage 1.\n\n### Needs\n[rgthree-comfy](https://github.com/rgthree/rgthree-comfy) for the switches, comparer and displays.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** holds stage 1's caption. It emits a plain string, **not** a list, so the nodes it feeds run once each."
+      ],
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -500,
+        1160
+      ],
+      "size": [
+        440,
+        300
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            5
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Studio product photograph of a single bottle <bottle_1> standing on a dark slate tabletop <table_1> in front of a seamless warm grey backdrop <background_1>. Soft key light from the left, a gentle reflection of the bottle on the slate, calm and minimal.",
+        ""
+      ],
+      "title": "Shared prompt \u2014 stage 1 caption",
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 3,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        -500,
+        1500
+      ],
+      "size": [
+        360,
+        150
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "^Bottle",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "always one"
+      },
+      "title": "Bottle source"
+    },
+    {
+      "id": 4,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        -500,
+        1680
+      ],
+      "size": [
+        360,
+        150
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "^Label",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "always one"
+      },
+      "title": "Label source"
+    },
+    {
+      "id": 5,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        -500,
+        1860
+      ],
+      "size": [
+        360,
+        150
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "^Edit stage",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "default"
+      },
+      "title": "Edit stage on/off"
+    },
+    {
+      "id": 6,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        0,
+        80
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "background_1",
+        "layout",
+        0,
+        0,
+        1000,
+        1000,
+        "A seamless warm grey studio backdrop with a soft vertical gradient, darker at the top.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "background_1 (layout)"
+    },
+    {
+      "id": 7,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        380,
+        80
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "table_1",
+        "layout",
+        700,
+        0,
+        1000,
+        1000,
+        "A dark slate tabletop with a fine matte texture and a soft reflection.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "table_1 (layout)"
+    },
+    {
+      "id": 8,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        780,
+        80
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "bottle_1",
+        "layout",
+        180,
+        330,
+        820,
+        670,
+        "A tall frosted-glass bottle with a cork stopper and a blank cream paper label.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "bottle_1 \u2014 from desc"
+    },
+    {
+      "id": 9,
+      "type": "LoadImage",
+      "pos": [
+        1200,
+        80
+      ],
+      "size": [
+        300,
+        330
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Bottle reference \u2014 image 1"
+    },
+    {
+      "id": 10,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        1550,
+        80
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "bottle_1",
+        "move",
+        0,
+        0,
+        1000,
+        1000,
+        "The bottle from the reference image: same shape, glass and stopper, label facing the camera.",
+        0,
+        180,
+        330,
+        820,
+        670
+      ],
+      "title": "bottle_1 \u2014 from ref_image_0"
+    },
+    {
+      "id": 11,
+      "type": "BFLFlux3LayoutPrompt",
+      "pos": [
+        0,
+        620
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 4
+        },
+        {
+          "name": "caption",
+          "type": "STRING",
+          "widget": {
+            "name": "caption"
+          },
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            7
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3LayoutPrompt"
+      },
+      "widgets_values": [
+        "",
+        ""
+      ],
+      "title": "Layout prompt \u2014 stage 1"
+    },
+    {
+      "id": 12,
+      "type": "BFLFlux3Image",
+      "pos": [
+        1980,
+        80
+      ],
+      "size": [
+        420,
+        580
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 6
+        },
+        {
+          "name": "input_image_2",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            8,
+            13,
+            21
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [
+            9
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "Studio product photograph of a single bottle <bottle_1> standing on a dark slate tabletop <table_1> in front of a seamless warm grey backdrop <background_1>. Soft key light from the left, a gentle reflection of the bottle on the slate, calm and minimal.",
+        "4:5",
+        "1k",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "Stage 1 \u2014 FLUX 3 Image generate"
+    },
+    {
+      "id": 13,
+      "type": "SaveImage",
+      "pos": [
+        2440,
+        80
+      ],
+      "size": [
+        420,
+        480
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/gen_edit_stage1"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "Display Any (rgthree)",
+      "pos": [
+        1980,
+        700
+      ],
+      "size": [
+        420,
+        240
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 9
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Display Any (rgthree)"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Stage 1 \u2014 expanded prompt"
+    },
+    {
+      "id": 15,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        0,
+        1120
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            10
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "background_1",
+        "keep",
+        0,
+        0,
+        1000,
+        1000,
+        "A seamless warm grey studio backdrop.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "background_1 (keep)"
+    },
+    {
+      "id": 16,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        380,
+        1120
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "table_1",
+        "keep",
+        700,
+        0,
+        1000,
+        1000,
+        "A dark slate tabletop.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "table_1 (keep)"
+    },
+    {
+      "id": 17,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        760,
+        1120
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            17
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "bottle_1",
+        "keep",
+        180,
+        330,
+        820,
+        670,
+        "The frosted-glass bottle with its stopper.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "bottle_1 (keep)"
+    },
+    {
+      "id": 18,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        1140,
+        1120
+      ],
+      "size": [
+        420,
+        220
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            12
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "In <ref_image_0>, replace the label on the bottle <bottle_1> with a new label <label_1>. Keep the bottle's shape, glass and stopper, the slate tabletop <table_1> and the grey backdrop <background_1> exactly unchanged."
+      ],
+      "title": "Stage 2 instruction"
+    },
+    {
+      "id": 19,
+      "type": "BFLFlux3LayoutPrompt",
+      "pos": [
+        1140,
+        1380
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 19
+        },
+        {
+          "name": "caption",
+          "type": "STRING",
+          "widget": {
+            "name": "caption"
+          },
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            14
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3LayoutPrompt"
+      },
+      "widgets_values": [
+        "",
+        ""
+      ],
+      "title": "Layout prompt \u2014 stage 2"
+    },
+    {
+      "id": 20,
+      "type": "BFLFlux3Image",
+      "pos": [
+        1600,
+        1120
+      ],
+      "size": [
+        420,
+        580
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 13
+        },
+        {
+          "name": "input_image_2",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 20
+        },
+        {
+          "name": "input_image_3",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            15,
+            22
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [
+            16
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "In <ref_image_0>, replace the label on the bottle <bottle_1> with a new label <label_1>. Keep the bottle's shape, glass and stopper, the slate tabletop <table_1> and the grey backdrop <background_1> exactly unchanged.",
+        "auto",
+        "match_input",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "Stage 2 \u2014 FLUX 3 Image edit"
+    },
+    {
+      "id": 21,
+      "type": "SaveImage",
+      "pos": [
+        2060,
+        1120
+      ],
+      "size": [
+        420,
+        480
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 15
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/gen_edit_stage2"
+      ]
+    },
+    {
+      "id": 22,
+      "type": "Display Any (rgthree)",
+      "pos": [
+        2060,
+        1640
+      ],
+      "size": [
+        420,
+        240
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 16
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Display Any (rgthree)"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Stage 2 \u2014 expanded prompt"
+    },
+    {
+      "id": 23,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        10,
+        2140
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            18
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "label_1",
+        "new",
+        430,
+        380,
+        640,
+        620,
+        "A cream paper label with text reading \"NORTH\" in a black serif typeface, centred.",
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "title": "label_1 \u2014 text"
+    },
+    {
+      "id": 24,
+      "type": "LoadImage",
+      "pos": [
+        430,
+        2140
+      ],
+      "size": [
+        300,
+        330
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            20
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Logo reference \u2014 image 2"
+    },
+    {
+      "id": 25,
+      "type": "BFLFlux3BoxElement",
+      "pos": [
+        780,
+        2140
+      ],
+      "size": [
+        340,
+        440
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "shape": 7,
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "rows",
+          "type": "FLUX3_BOXES",
+          "links": [
+            19
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3BoxElement"
+      },
+      "widgets_values": [
+        "label_1",
+        "move",
+        0,
+        0,
+        1000,
+        1000,
+        "The logo from image 2, printed in black on a cream paper label.",
+        1,
+        430,
+        380,
+        640,
+        620
+      ],
+      "title": "label_1 \u2014 from ref_image_1"
+    },
+    {
+      "id": 26,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        2960,
+        80
+      ],
+      "size": [
+        600,
+        780
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_a",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 21
+        },
+        {
+          "name": "image_b",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Image Comparer (rgthree)",
+        "comparer_mode": "Slide"
+      },
+      "widgets_values": [],
+      "title": "Stage 1 \u2194 stage 2"
+    }
+  ],
+  "links": [
+    [
+      1,
+      6,
+      0,
+      7,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      2,
+      7,
+      0,
+      8,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      3,
+      8,
+      0,
+      10,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      4,
+      10,
+      0,
+      11,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      5,
+      2,
+      0,
+      11,
+      1,
+      "STRING"
+    ],
+    [
+      6,
+      9,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      11,
+      0,
+      12,
+      2,
+      "STRING"
+    ],
+    [
+      8,
+      12,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      12,
+      1,
+      14,
+      0,
+      "STRING"
+    ],
+    [
+      10,
+      15,
+      0,
+      16,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      11,
+      16,
+      0,
+      17,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      12,
+      18,
+      0,
+      19,
+      1,
+      "STRING"
+    ],
+    [
+      13,
+      12,
+      0,
+      20,
+      0,
+      "IMAGE"
+    ],
+    [
+      14,
+      19,
+      0,
+      20,
+      3,
+      "STRING"
+    ],
+    [
+      15,
+      20,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      20,
+      1,
+      22,
+      0,
+      "STRING"
+    ],
+    [
+      17,
+      17,
+      0,
+      23,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      18,
+      23,
+      0,
+      25,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      19,
+      25,
+      0,
+      19,
+      0,
+      "FLUX3_BOXES"
+    ],
+    [
+      20,
+      24,
+      0,
+      20,
+      1,
+      "IMAGE"
+    ],
+    [
+      21,
+      12,
+      0,
+      26,
+      0,
+      "IMAGE"
+    ],
+    [
+      22,
+      20,
+      0,
+      26,
+      1,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Bottle \u00b7 generated from desc",
+      "bounding": [
+        750,
+        20,
+        400,
+        540
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Bottle \u00b7 from reference image",
+      "bounding": [
+        1170,
+        20,
+        760,
+        540
+      ],
+      "color": "#A88",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Edit stage",
+      "bounding": [
+        -20,
+        1060,
+        2920,
+        960
+      ],
+      "color": "#88A",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Label \u00b7 written text",
+      "bounding": [
+        -20,
+        2080,
+        400,
+        540
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Label \u00b7 logo from reference",
+      "bounding": [
+        400,
+        2080,
+        760,
+        540
+      ],
+      "color": "#A88",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.45,
+      "offset": [
+        560,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

@@ -2,7 +2,7 @@
 
 # Workflows
 
-17 ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use **Workflow → Open**.
+28 ready-made graphs. Drag a `.json` onto the ComfyUI canvas, or use **Workflow → Open**.
 
 **Every graph documents itself on its own canvas.** The MarkdownNote inside each one is the real documentation — it is the copy in front of you while you work, and everything under [`docs/`](docs/) is generated from it. Read either; they cannot disagree.
 
@@ -18,6 +18,25 @@ Black Forest Labs endpoints, one image at a time.
 | [`flux2-structure-canny`](flux2/flux2-structure-canny.json) · [docs](docs/flux2-structure-canny.md) | 1 | Build the control map locally with Canny and hand it to FLUX.2 as an ordinary reference image, because the API itself has no control endpoint to send it to. |
 | [`flux2-style-transfer`](flux2/flux2-style-transfer.json) · [docs](docs/flux2-style-transfer.md) | 1 | Two images into one FLUX.2 call: the first keeps its composition, the second lends its look, and the prompt says which is which. |
 | [`flux2-variations`](flux2/flux2-variations.json) · [docs](docs/flux2-variations.md) | 4 | Four takes on one image at fixed seeds, so the set is reproducible and you can tell which seed gave you which result. |
+
+## FLUX 3
+
+FLUX 3 Image and Klein: generation, instruction edits, multi-reference, and bounding-box layouts.
+
+| Workflow | Calls | What it does |
+| --- | --- | --- |
+| [`flux3-box-edit`](flux3/flux3-box-edit.json) · [docs](docs/flux3-box-edit.md) | 1 | Edit an image by its element table: each row says where an element is now and where it should end up, so the model knows what to keep, what to move, what to make new and what to take out. |
+| [`flux3-edit`](flux3/flux3-edit.json) · [docs](docs/flux3-edit.md) | 1 | One image in, one written instruction, one call: name the thing to change precisely enough that only one element matches, say what it becomes, and say what stays. |
+| [`flux3-edit-before-after`](flux3/flux3-edit-before-after.json) · [docs](docs/flux3-edit-before-after.md) | 1 | One instruction edit with the source and the result laid over each other, so you judge what changed by sliding across it rather than by flicking between two previews. |
+| [`flux3-edit-chain`](flux3/flux3-edit-chain.json) · [docs](docs/flux3-edit-chain.md) | 3 | Generate, then edit, then edit again — each stage takes the previous result as input_image, so you refine one image a step at a time and only pay for the step you changed. |
+| [`flux3-generate-edit-refs-boxes`](flux3/flux3-generate-edit-refs-boxes.json) · [docs](docs/flux3-generate-edit-refs-boxes.md) | 2 | Lay out a new image with boxes, optionally pulling an element from a reference photo, then edit that image box by box, optionally placing something from a second reference. |
+| [`flux3-image-vs-klein`](flux3/flux3-image-vs-klein.json) · [docs](docs/flux3-image-vs-klein.md) | 2 | The same image and the same instruction through both FLUX 3 models, side by side, so you can see what the cheaper, faster Klein gives up on your kind of edit before committing a batch to either. |
+| [`flux3-klein-edit`](flux3/flux3-klein-edit.json) · [docs](docs/flux3-klein-edit.md) | 1 | The fast, editing-first FLUX 3 model, with the three dials FLUX 3 Image does not have: seed, steps and output_format. |
+| [`flux3-klein-seed-sweep`](flux3/flux3-klein-seed-sweep.json) · [docs](docs/flux3-klein-seed-sweep.md) | 4 | Four Klein edits of one image at four fixed seeds, batched onto one sheet, so you pick the take you want and keep its seed for every later run. |
+| [`flux3-layout-boxes`](flux3/flux3-layout-boxes.json) · [docs](docs/flux3-layout-boxes.md) | 1 | Place every element yourself: a caption that names each element as <id>, plus one box per element, joined into the single prompt string FLUX 3 reads layouts from. |
+| [`flux3-multi-reference`](flux3/flux3-multi-reference.json) · [docs](docs/flux3-multi-reference.md) | 1 | Several images into one FLUX 3 Image call, each named by its position: image 1 is the scene, the rest supply what goes into it. |
+| [`flux3-multi-reference-prep`](flux3/flux3-multi-reference-prep.json) · [docs](docs/flux3-multi-reference-prep.md) | 1 | Three references normalised to a sensible size, checked in order on a contact strip, then sent to FLUX 3 Image together — so nothing is rejected for size and nothing arrives in the wrong slot. |
+| [`flux3-text-to-image`](flux3/flux3-text-to-image.json) · [docs](docs/flux3-text-to-image.md) | 1 | One prompt, one FLUX 3 Image call, with the frame set explicitly because auto falls back to a square when there is no reference. |
 
 ## Stability
 
@@ -55,7 +74,7 @@ Any other pairing works the same way: point the reader's `directory` at the writ
 
 ## Adding one
 
-1. Drop the `.json` into the family folder it belongs to — `flux2/`, `stability/` or `tarot/`.
+1. Drop the `.json` into the family folder it belongs to — `flux2/`, `flux3/`, `stability/` or `tarot/`.
 2. Give it a **MarkdownNote** whose first heading is its title and whose first paragraph says what it does in a sentence. That note becomes its documentation.
 3. Run `python tools/workflow_docs.py`.
 
@@ -65,4 +84,4 @@ Filenames keep their family prefix (`stability-01-sketch.json`, not `01-sketch.j
 
 ---
 
-17 graphs. Running every fixed-cost one once comes to 16 calls; the *per input* and *sweep* graphs are on top of that and depend on what you feed them.
+28 graphs. Running every fixed-cost one once comes to 35 calls; the *per input* and *sweep* graphs are on top of that and depend on what you feed them.

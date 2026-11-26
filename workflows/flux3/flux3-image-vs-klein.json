@@ -1,0 +1,611 @@
+{
+  "last_node_id": 12,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -480,
+        40
+      ],
+      "size": [
+        420,
+        760
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## FLUX 3 Image vs Klein\n\nThe same image and the same instruction through both FLUX 3 models, side by side, so you can see what the cheaper, faster Klein gives up on your kind of edit before committing a batch to either.\n\n**Anything Everywhere** (Use Everywhere) carries the loaded image to both models without a wire each. Its input filter is `^input_image$`, so it only fills each node's first reference socket \u2014 never the empty `input_image_2` that appears below it, and never the comparer. Add a third model node and it is fed automatically.\n\n**Fast Groups Bypasser** (rgthree) has one toggle per model group. Switch one off to stop paying for it; a bypassed model passes the source image straight through, so the comparer then shows *source vs the other model*.\n\n**Image Comparer**: `image_a` is FLUX 3 Image, `image_b` is Klein. Two **Display Any** nodes show how each model rewrote the instruction \u2014 Klein's upsampler writes a full scene caption.\n\nKlein's `seed` is fixed at 42; FLUX 3 Image has no seed, only the unsent `variation`.\n\n### Needs\n[rgthree-comfy](https://github.com/rgthree/rgthree-comfy) and [Use Everywhere](https://github.com/chrisgoringe/cg-use-everywhere). **Manager \u2192 Install Missing Custom Nodes** finds both if the graph loads with red nodes. If Use Everywhere is missing, the model nodes get no image and run as **text-to-image** \u2014 install it before you queue.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every FLUX 3 `prompt` in this graph, so there is one\nplace to edit it. It emits a plain string, **not** a list, so each node it feeds still runs once."
+      ],
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        40
+      ],
+      "size": [
+        300,
+        330
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Source"
+    },
+    {
+      "id": 3,
+      "type": "Anything Everywhere",
+      "pos": [
+        0,
+        420
+      ],
+      "size": [
+        240,
+        90
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anything",
+          "type": "IMAGE",
+          "label": "IMAGE",
+          "shape": 7,
+          "link": 1
+        },
+        {
+          "name": "anything11",
+          "type": "*",
+          "label": "anything",
+          "link": null
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Anything Everywhere",
+        "ue_properties": {
+          "version": "8.0.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "title_regex": null,
+          "input_regex": "^input_image$",
+          "group_regex": null,
+          "title_regex_invert": false,
+          "input_regex_invert": false,
+          "group_regex_invert": false,
+          "group_restricted": 0,
+          "color_restricted": 0,
+          "repeated_type_rule": 0,
+          "apply_to_unrepeated": 0,
+          "send_to_any": 0,
+          "string_to_combo": 0,
+          "next_input_index": 11
+        }
+      },
+      "widgets_values": [],
+      "title": "Source \u2192 every input_image"
+    },
+    {
+      "id": 4,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -480,
+        840
+      ],
+      "size": [
+        400,
+        280
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            2,
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Make it a winter night: snow on the roof, the dock and the trees, the lake is frozen, warm yellow light glowing in the cabin windows.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 5,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        0,
+        560
+      ],
+      "size": [
+        340,
+        170
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "^Model",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "default"
+      },
+      "title": "Models on/off"
+    },
+    {
+      "id": 6,
+      "type": "BFLFlux3Image",
+      "pos": [
+        380,
+        90
+      ],
+      "size": [
+        420,
+        560
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            4,
+            6
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [
+            8
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "Make it a winter night: snow on the roof, the dock and the trees, the lake is frozen, warm yellow light glowing in the cabin windows.",
+        "auto",
+        "match_input",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "FLUX 3 Image"
+    },
+    {
+      "id": 7,
+      "type": "BFLFlux3ImageKlein",
+      "pos": [
+        380,
+        760
+      ],
+      "size": [
+        420,
+        580
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            5,
+            7
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [
+            9
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3ImageKlein"
+      },
+      "widgets_values": [
+        "Make it a winter night: snow on the roof, the dock and the trees, the lake is frozen, warm yellow light glowing in the cabin windows.",
+        "auto",
+        "default",
+        0,
+        0,
+        42,
+        "fixed",
+        16,
+        2,
+        "png",
+        "",
+        "",
+        ""
+      ],
+      "title": "FLUX 3 Image Klein"
+    },
+    {
+      "id": 8,
+      "type": "Display Any (rgthree)",
+      "pos": [
+        860,
+        820
+      ],
+      "size": [
+        420,
+        240
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 8
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Display Any (rgthree)"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "A \u2014 expanded prompt"
+    },
+    {
+      "id": 9,
+      "type": "Display Any (rgthree)",
+      "pos": [
+        860,
+        1090
+      ],
+      "size": [
+        420,
+        240
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 9
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Display Any (rgthree)"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "B \u2014 expanded prompt"
+    },
+    {
+      "id": 10,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        860,
+        40
+      ],
+      "size": [
+        560,
+        740
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_a",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 4
+        },
+        {
+          "name": "image_b",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Image Comparer (rgthree)",
+        "comparer_mode": "Slide"
+      },
+      "widgets_values": [],
+      "title": "A: FLUX 3 Image \u2194 B: Klein"
+    },
+    {
+      "id": 11,
+      "type": "SaveImage",
+      "pos": [
+        1460,
+        40
+      ],
+      "size": [
+        360,
+        380
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/compare_image"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "SaveImage",
+      "pos": [
+        1460,
+        450
+      ],
+      "size": [
+        360,
+        380
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/compare_klein"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      4,
+      0,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      3,
+      4,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      4,
+      6,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      7,
+      0,
+      10,
+      1,
+      "IMAGE"
+    ],
+    [
+      6,
+      6,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      7,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      6,
+      1,
+      8,
+      0,
+      "STRING"
+    ],
+    [
+      9,
+      7,
+      1,
+      9,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Model A \u00b7 FLUX 3 Image",
+      "bounding": [
+        360,
+        20,
+        460,
+        640
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Model B \u00b7 Klein",
+      "bounding": [
+        360,
+        690,
+        460,
+        660
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        520,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

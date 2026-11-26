@@ -1,0 +1,778 @@
+{
+  "last_node_id": 13,
+  "last_link_id": 12,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -480,
+        40
+      ],
+      "size": [
+        420,
+        760
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## FLUX 3 Klein seed sweep\n\nFour Klein edits of one image at four fixed seeds, batched onto one sheet, so you pick the take you want and keep its seed for every later run.\n\nEvery run bills **four** Klein calls. Toggle a take's group off in **Fast Groups Bypasser** to spend less; copy one to spend more. A bypassed take passes the source through, so its slot on the sheet shows the original.\n\n**Anything Everywhere** sends the loaded image to every Klein node's `input_image` (filter `^input_image$`), so a fifth take needs no wiring \u2014 drop in a Klein node and give it a new seed.\n\nThe seeds are **1001\u20131004**, all **fixed**, so the sheet is reproducible. The prompt is the same for all four, which keeps the seed the only variable.\n\nThree core **Batch Images** nodes stack the takes into one batch for a single Save Image, in seed order. Batch Images rescales to the first image's size if the takes differ, which they will not here: every take keeps the source size.\n\n### Needs\n[rgthree-comfy](https://github.com/rgthree/rgthree-comfy) and [Use Everywhere](https://github.com/chrisgoringe/cg-use-everywhere). **Manager \u2192 Install Missing Custom Nodes** finds both if the graph loads with red nodes. If Use Everywhere is missing, the model nodes get no image and run as **text-to-image** \u2014 install it before you queue.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every FLUX 3 `prompt` in this graph, so there is one\nplace to edit it. It emits a plain string, **not** a list, so each node it feeds still runs once."
+      ],
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        40
+      ],
+      "size": [
+        300,
+        330
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Source"
+    },
+    {
+      "id": 3,
+      "type": "Anything Everywhere",
+      "pos": [
+        0,
+        420
+      ],
+      "size": [
+        240,
+        90
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anything",
+          "type": "IMAGE",
+          "label": "IMAGE",
+          "shape": 7,
+          "link": 1
+        },
+        {
+          "name": "anything11",
+          "type": "*",
+          "label": "anything",
+          "link": null
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Anything Everywhere",
+        "ue_properties": {
+          "version": "8.0.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "title_regex": null,
+          "input_regex": "^input_image$",
+          "group_regex": null,
+          "title_regex_invert": false,
+          "input_regex_invert": false,
+          "group_regex_invert": false,
+          "group_restricted": 0,
+          "color_restricted": 0,
+          "repeated_type_rule": 0,
+          "apply_to_unrepeated": 0,
+          "send_to_any": 0,
+          "string_to_combo": 0,
+          "next_input_index": 11
+        }
+      },
+      "widgets_values": [],
+      "title": "Source \u2192 every input_image"
+    },
+    {
+      "id": 4,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        0,
+        560
+      ],
+      "size": [
+        340,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "^Take",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "default"
+      },
+      "title": "Takes on/off"
+    },
+    {
+      "id": 5,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -480,
+        840
+      ],
+      "size": [
+        400,
+        280
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Restyle this photo as a hand-printed linocut poster in three inks: black, cream and a single vermilion accent.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 6,
+      "type": "BFLFlux3ImageKlein",
+      "pos": [
+        370,
+        90
+      ],
+      "size": [
+        420,
+        580
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3ImageKlein"
+      },
+      "widgets_values": [
+        "Restyle this photo as a hand-printed linocut poster in three inks: black, cream and a single vermilion accent.",
+        "auto",
+        "default",
+        0,
+        0,
+        1001,
+        "fixed",
+        16,
+        2,
+        "png",
+        "",
+        "",
+        ""
+      ],
+      "title": "Klein \u2014 seed 1001"
+    },
+    {
+      "id": 7,
+      "type": "BFLFlux3ImageKlein",
+      "pos": [
+        840,
+        90
+      ],
+      "size": [
+        420,
+        580
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            7
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3ImageKlein"
+      },
+      "widgets_values": [
+        "Restyle this photo as a hand-printed linocut poster in three inks: black, cream and a single vermilion accent.",
+        "auto",
+        "default",
+        0,
+        0,
+        1002,
+        "fixed",
+        16,
+        2,
+        "png",
+        "",
+        "",
+        ""
+      ],
+      "title": "Klein \u2014 seed 1002"
+    },
+    {
+      "id": 8,
+      "type": "BFLFlux3ImageKlein",
+      "pos": [
+        1310,
+        90
+      ],
+      "size": [
+        420,
+        580
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3ImageKlein"
+      },
+      "widgets_values": [
+        "Restyle this photo as a hand-printed linocut poster in three inks: black, cream and a single vermilion accent.",
+        "auto",
+        "default",
+        0,
+        0,
+        1003,
+        "fixed",
+        16,
+        2,
+        "png",
+        "",
+        "",
+        ""
+      ],
+      "title": "Klein \u2014 seed 1003"
+    },
+    {
+      "id": 9,
+      "type": "BFLFlux3ImageKlein",
+      "pos": [
+        1780,
+        90
+      ],
+      "size": [
+        420,
+        580
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3ImageKlein"
+      },
+      "widgets_values": [
+        "Restyle this photo as a hand-printed linocut poster in three inks: black, cream and a single vermilion accent.",
+        "auto",
+        "default",
+        0,
+        0,
+        1004,
+        "fixed",
+        16,
+        2,
+        "png",
+        "",
+        "",
+        ""
+      ],
+      "title": "Klein \u2014 seed 1004"
+    },
+    {
+      "id": 10,
+      "type": "ImageBatch",
+      "pos": [
+        360,
+        760
+      ],
+      "size": [
+        240,
+        90
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": 6
+        },
+        {
+          "name": "image2",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageBatch"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "ImageBatch",
+      "pos": [
+        830,
+        760
+      ],
+      "size": [
+        240,
+        90
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": 8
+        },
+        {
+          "name": "image2",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            10
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageBatch"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "ImageBatch",
+      "pos": [
+        1300,
+        760
+      ],
+      "size": [
+        240,
+        90
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": 10
+        },
+        {
+          "name": "image2",
+          "type": "IMAGE",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            12
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageBatch"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "SaveImage",
+      "pos": [
+        1600,
+        760
+      ],
+      "size": [
+        640,
+        520
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 12
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/klein_seed_sweep"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      5,
+      0,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      3,
+      5,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      4,
+      5,
+      0,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      5,
+      5,
+      0,
+      9,
+      1,
+      "STRING"
+    ],
+    [
+      6,
+      6,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      7,
+      0,
+      10,
+      1,
+      "IMAGE"
+    ],
+    [
+      8,
+      10,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      8,
+      0,
+      11,
+      1,
+      "IMAGE"
+    ],
+    [
+      10,
+      11,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      11,
+      9,
+      0,
+      12,
+      1,
+      "IMAGE"
+    ],
+    [
+      12,
+      12,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Take 1 \u00b7 seed 1001",
+      "bounding": [
+        350,
+        20,
+        460,
+        680
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Take 2 \u00b7 seed 1002",
+      "bounding": [
+        820,
+        20,
+        460,
+        680
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Take 3 \u00b7 seed 1003",
+      "bounding": [
+        1290,
+        20,
+        460,
+        680
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Take 4 \u00b7 seed 1004",
+      "bounding": [
+        1760,
+        20,
+        460,
+        680
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        520,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}

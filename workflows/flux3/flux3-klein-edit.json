@@ -1,0 +1,283 @@
+{
+  "last_node_id": 6,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -460,
+        40
+      ],
+      "size": [
+        400,
+        520
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## FLUX 3 Image Klein edit\n\nThe fast, editing-first FLUX 3 model, with the three dials FLUX 3 Image does not have: `seed`, `steps` and `output_format`.\n\n`seed` is **42**, **fixed**, so the same input and prompt give the same image. Set it to **-1** for a fresh random seed each run.\n\n`steps` is **16**, the maximum and the default. Fewer is faster and rougher.\n\n`resolution` is **default**, which leaves it out of the request: an edit then comes back at the input's own size, a text-to-image at 1k. There is no `match_input` on Klein because that is already what it does. Exact `width` / `height` start at 64 here rather than 256.\n\nThe API runs Klein's prompt upsampler for you, so a short instruction is fine; `expanded_prompt` shows the caption it wrote. Klein has no `grounding` or `version`.\n\nDisconnect the image and the same node does text-to-image. Up to 10 references, as on FLUX 3 Image.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds the prompt in this graph, so there is one\nplace to edit it. It emits a plain string, **not** a list. That is the difference between it and **Prompt\nList**, which would make each node it feeds run once per line and multiply what the graph\ncosts."
+      ],
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        274,
+        314
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "title": "Image to edit"
+    },
+    {
+      "id": 3,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -70,
+        620
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "Make it a winter night: snow on the roof, the dock and the trees, the lake is frozen, warm yellow light glowing in the cabin windows.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 4,
+      "type": "BFLFlux3ImageKlein",
+      "pos": [
+        400,
+        60
+      ],
+      "size": [
+        430,
+        580
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "link": 1,
+          "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 2,
+          "widget": {
+            "name": "prompt"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [
+            4
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3ImageKlein"
+      },
+      "widgets_values": [
+        "Make it a winter night: snow on the roof, the dock and the trees, the lake is frozen, warm yellow light glowing in the cabin windows.",
+        "auto",
+        "default",
+        0,
+        0,
+        42,
+        "fixed",
+        16,
+        2,
+        "png",
+        "",
+        "",
+        ""
+      ],
+      "title": "FLUX 3 Image Klein \u2014 edit"
+    },
+    {
+      "id": 5,
+      "type": "SaveImage",
+      "pos": [
+        900,
+        60
+      ],
+      "size": [
+        480,
+        500
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/klein_edit"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "PreviewAny",
+      "pos": [
+        900,
+        600
+      ],
+      "size": [
+        480,
+        260
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 4
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [],
+      "title": "Expanded prompt"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      1,
+      "STRING"
+    ],
+    [
+      3,
+      4,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      4,
+      1,
+      6,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        480,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}

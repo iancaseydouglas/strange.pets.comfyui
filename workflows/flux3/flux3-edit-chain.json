@@ -1,0 +1,670 @@
+{
+  "last_node_id": 13,
+  "last_link_id": 11,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [
+        -480,
+        40
+      ],
+      "size": [
+        420,
+        760
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## FLUX 3 edit chain\n\nGenerate, then edit, then edit again \u2014 each stage takes the previous result as `input_image`, so you refine one image a step at a time and only pay for the step you changed.\n\nEach stage is a group. ComfyUI only re-runs a node whose inputs changed, and every FLUX 3 node here has a **fixed** `variation`, so editing **Edit 2**'s text re-runs Edit 2 alone; stages 1 and Edit 1 come from cache for free. Bump a stage's `variation` to re-roll just that stage (and everything after it).\n\n**Fast Groups Bypasser** (rgthree) toggles the edit stages. A bypassed stage makes no call and hands its input image straight on, so the chain always ends at the last active stage: bypass both edits while you settle the base image, or bypass just Edit 1 to apply Edit 2 to the base directly. Bypass rather than mute \u2014 a muted Edit 1 would leave Edit 2 with no image, and it would quietly run as text-to-image.\n\nThe base prompt is the **Shared Prompt**; each edit's instruction is a core **Text (Multiline)** node, so the instructions sit in plain view beside the stage they drive. `resolution` on the edits is **match_input**, so the size never drifts across the chain.\n\n**Image Comparer** shows base vs final; each stage also has a preview so you can see where a change crept in.\n\n### Needs\n[rgthree-comfy](https://github.com/rgthree/rgthree-comfy). **Manager \u2192 Install Missing Custom Nodes** finds it if the graph loads with red nodes.\n\n## The prompt lives in one node\n\nThe **Shared Prompt** node feeds every FLUX 3 `prompt` in this graph, so there is one\nplace to edit it. It emits a plain string, **not** a list, so each node it feeds still runs once."
+      ],
+      "title": "Read me",
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "SPSharedPrompt",
+      "pos": [
+        -480,
+        840
+      ],
+      "size": [
+        400,
+        280
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SPSharedPrompt"
+      },
+      "widgets_values": [
+        "A two-color risograph illustration with porous ink and soft misregistration: a rabbit rides a pumpkin along a winding path through three layers of rolling hills, a lighthouse on the horizon.",
+        ""
+      ],
+      "title": "Shared prompt",
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 3,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        -480,
+        1160
+      ],
+      "size": [
+        340,
+        170
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "^Edit",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "default"
+      },
+      "title": "Stages on/off"
+    },
+    {
+      "id": 4,
+      "type": "BFLFlux3Image",
+      "pos": [
+        40,
+        90
+      ],
+      "size": [
+        420,
+        560
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            2,
+            4,
+            9
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "A two-color risograph illustration with porous ink and soft misregistration: a rabbit rides a pumpkin along a winding path through three layers of rolling hills, a lighthouse on the horizon.",
+        "16:9",
+        "1k",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "Base \u2014 text to image"
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "pos": [
+        40,
+        670
+      ],
+      "size": [
+        360,
+        380
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "Base"
+    },
+    {
+      "id": 6,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        520,
+        90
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "Make it dusk: deep violet sky, the lighthouse beam switched on and sweeping left. Keep the rabbit, the pumpkin, the path and the hills exactly as they are."
+      ],
+      "title": "Edit 1 instruction"
+    },
+    {
+      "id": 7,
+      "type": "BFLFlux3Image",
+      "pos": [
+        520,
+        320
+      ],
+      "size": [
+        420,
+        560
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 4
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            5,
+            7
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "Make it dusk: deep violet sky, the lighthouse beam switched on and sweeping left. Keep the rabbit, the pumpkin, the path and the hills exactly as they are.",
+        "auto",
+        "match_input",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "Edit 1"
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "pos": [
+        520,
+        900
+      ],
+      "size": [
+        420,
+        300
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "After edit 1"
+    },
+    {
+      "id": 9,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        1000,
+        90
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "Add a small red kite on a string held by the rabbit, flying above the hills on the right. Keep everything else unchanged."
+      ],
+      "title": "Edit 2 instruction"
+    },
+    {
+      "id": 10,
+      "type": "BFLFlux3Image",
+      "pos": [
+        1000,
+        320
+      ],
+      "size": [
+        420,
+        560
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input_image",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 7
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            8,
+            10,
+            11
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "expanded_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BFLFlux3Image"
+      },
+      "widgets_values": [
+        "Add a small red kite on a string held by the rabbit, flying above the hills on the right. Keep everything else unchanged.",
+        "auto",
+        "match_input",
+        0,
+        0,
+        2,
+        true,
+        "latest",
+        0,
+        "fixed",
+        "",
+        "",
+        ""
+      ],
+      "title": "Edit 2"
+    },
+    {
+      "id": 11,
+      "type": "PreviewImage",
+      "pos": [
+        1000,
+        900
+      ],
+      "size": [
+        420,
+        300
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "title": "After edit 2"
+    },
+    {
+      "id": 12,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        1480,
+        40
+      ],
+      "size": [
+        560,
+        560
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_a",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 9
+        },
+        {
+          "name": "image_b",
+          "type": "IMAGE",
+          "shape": 7,
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Image Comparer (rgthree)",
+        "comparer_mode": "Slide"
+      },
+      "widgets_values": [],
+      "title": "Base \u2194 final"
+    },
+    {
+      "id": 13,
+      "type": "SaveImage",
+      "pos": [
+        1480,
+        640
+      ],
+      "size": [
+        420,
+        460
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "flux3/edit_chain"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      4,
+      1,
+      "STRING"
+    ],
+    [
+      2,
+      4,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      6,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      4,
+      4,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      9,
+      0,
+      10,
+      1,
+      "STRING"
+    ],
+    [
+      7,
+      7,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      10,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      4,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      10,
+      0,
+      12,
+      1,
+      "IMAGE"
+    ],
+    [
+      11,
+      10,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Base",
+      "bounding": [
+        20,
+        20,
+        460,
+        1050
+      ],
+      "color": "#88A",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Edit 1",
+      "bounding": [
+        500,
+        20,
+        460,
+        1210
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "Edit 2",
+      "bounding": [
+        980,
+        20,
+        460,
+        1210
+      ],
+      "color": "#A88",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        520,
+        40
+      ]
+    }
+  },
+  "version": 0.4
+}
